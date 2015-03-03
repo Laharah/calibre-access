@@ -1,3 +1,9 @@
+"""
+Script that parses a calibre server log file.
+
+Usage: lookup_ips.py [LOGFILE]
+"""
+
 __author__ = 'laharah'
 
 import pygeoip
@@ -5,6 +11,8 @@ import re
 import urllib2
 import gzip
 import os
+import docopt
+import platform
 
 from collections import namedtuple
 
@@ -80,19 +88,39 @@ def get_database():
     return file_name[:-3]
 
 
-def main():
-    if os.path.exists('server_access_log.txt'):
-        records = load_record_strings('server_access_log.txt')
-    else:
+def locate_logs():
+    system = platform.system()
+
+    if system == 'Darwin':
+        path = os.path.expanduser(
+            '~/Library/Preferences/calibre/server_access_log.txt')
+
+    elif system == 'Windows':
         appdata = os.getenv('APPDATA')
-        if not appdata:
-            print "server_access_log.txt not found. Quitting"
-            exit(1)
         path = os.path.join(appdata, 'calibre', 'server_access_log.txt')
-        if not os.path.exists(path):
-            print "Could not find calibre access log. Quitting..."
+
+    else:
+        path = os.path.expanduser('~/.config/calibre/server_access_log.txt')
+
+    if os.path.exists(path):
+        return path
+    else:
+        if os.path.exists('server_access_log.txt'):
+            return 'server_access_log.txt'
+        else:
+            print 'ERROR: Could not locate log file.'
             exit(1)
-        records = load_record_strings(path)
+
+
+def main():
+    arguments = docopt.docopt(__doc__)
+    log_file = arguments["LOGFILE"]
+    if not log_file:
+        log_file = locate_logs()
+    if not os.path.exists(log_file):
+        print "Given Log file does not exsist!"
+        exit(1)
+    records = load_record_strings(log_file)
     download_records = []
     try:
         ipdatabase = pygeoip.GeoIP('GeoLiteCity.dat')
