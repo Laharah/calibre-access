@@ -13,9 +13,13 @@ import gzip
 import os
 import docopt
 import platform
+import appdirs
+import time
 
 from collections import namedtuple
 
+APPNAME = 'calibre-access'
+USER_DIR = appdirs.user_data_dir(APPNAME)
 DownloadRecord = namedtuple("DownloadRecord",
                             ['ip', 'date', 'location', 'book'])
 
@@ -51,13 +55,16 @@ def translate_match(match, ipdatabase):
     return download
 
 
-def get_database():
+def download_database():
     print ("database missing or out of date, attempting to download from "
            "maxmind...")
 
     url = "http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz"
 
-    file_name = url.split('/')[-1]
+    if not os.path.exists(USER_DIR):
+        os.makedirs(USER_DIR)
+
+    file_name = os.path.join(USER_DIR, url.split('/')[-1])
     u = urllib2.urlopen(url)
     f = open(file_name, 'wb')
     meta = u.info()
@@ -111,6 +118,17 @@ def locate_logs():
             print 'ERROR: Could not locate log file.'
             exit(1)
 
+def get_database():
+    database_path = os.path.join(USER_DIR, 'GeoLiteCity.dat')
+    try:
+        ipdatabase = pygeoip.GeoIP(database_path)
+    except IOError:
+        ipdatabase = pygeoip.GeoIP(download_database())
+
+    if time.time() - os.path.getmtime(database_path) > 2628000:
+        ipdatabase = pygeoip.GeoIP(download_database())
+
+    return ipdatabase
 
 def main():
     arguments = docopt.docopt(__doc__)
@@ -122,10 +140,7 @@ def main():
         exit(1)
     records = load_record_strings(log_file)
     download_records = []
-    try:
-        ipdatabase = pygeoip.GeoIP('GeoLiteCity.dat')
-    except IOError:
-        ipdatabase = pygeoip.GeoIP(get_database())
+    ipdatabase = get_database()
     for record in records:
         download_record = parse_record(record, ipdatabase)
         print download_record

@@ -1,4 +1,4 @@
-#Lookup IPs: #
+#calibre-access: #
 ##See who's been using your calibre server ##
 
 Looks for the calibre server_access_log and parses it for downloaded files. 
@@ -9,6 +9,6 @@ downloaded.
 
 ###Usage###
 
-    python lookup_ips.py
+    python calibre-access.py
 
 That's it!
