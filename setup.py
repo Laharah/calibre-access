@@ -11,7 +11,8 @@ setup(
     py_modules=['calibre_access'],
     install_requires=[
         'pygeoip >= 0.3',
-        'appdirs >= 1.4.0'
+        'appdirs >= 1.4.0',
+        'docopt >= 0.5.0'
     ],
     entry_points={
         'console_scripts': [
