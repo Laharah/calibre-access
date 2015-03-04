@@ -1,7 +1,9 @@
 """
 Script that parses a calibre server log file.
 
-Usage: lookup_ips.py [LOGFILE]
+Usage: calibre-access [LOGFILE]
+
+Licensed under the MIT license (see LICENSE)
 """
 
 __author__ = 'laharah'
@@ -11,12 +13,13 @@ import re
 import urllib2
 import gzip
 import os
-import docopt
 import platform
-import appdirs
 import time
 
 from collections import namedtuple
+
+import docopt
+import appdirs
 
 APPNAME = 'calibre-access'
 USER_DIR = appdirs.user_data_dir(APPNAME)
@@ -126,6 +129,7 @@ def get_database():
         ipdatabase = pygeoip.GeoIP(download_database())
 
     if time.time() - os.path.getmtime(database_path) > 2628000:
+        os.remove(database_path)
         ipdatabase = pygeoip.GeoIP(download_database())
 
     return ipdatabase
