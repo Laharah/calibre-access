@@ -8,6 +8,7 @@ setup(
     author='laharah',
     author_email='laharah22+ca@gmail.com',
     description='Quick and dirty log parser for calibre server',
+    py_modules=['calibre_access'],
     install_requires=[
         'pygeoip >= 0.3',
         'appdirs >= 1.4.0'
