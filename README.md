@@ -9,6 +9,6 @@ downloaded.
 
 ###Usage###
 
-    python calibre-access.py
+    calibre-access [LOGFILE]
 
 That's it!
