@@ -123,14 +123,15 @@ def locate_logs():
 
 def get_database():
     database_path = os.path.join(USER_DIR, 'GeoLiteCity.dat')
-    try:
-        ipdatabase = pygeoip.GeoIP(database_path)
-    except IOError:
-        ipdatabase = pygeoip.GeoIP(download_database())
+    if not os.path.exists(database_path):
+        database_path = download_database()
 
     if time.time() - os.path.getmtime(database_path) > 2628000:
         os.remove(database_path)
-        ipdatabase = pygeoip.GeoIP(download_database())
+        database_path = download_database()
+
+    ipdatabase = pygeoip.GeoIP(database_path)
+
 
     return ipdatabase
 
