@@ -23,15 +23,15 @@ import appdirs
 
 APPNAME = 'calibre-access'
 USER_DIR = appdirs.user_data_dir(APPNAME)
-DownloadRecord = namedtuple("DownloadRecord", ['ip', 'date', 'location',
-                                               'book'])
+DownloadRecord = namedtuple("DownloadRecord", ['ip', 'date', 'location', 'book'])
 
 
 def load_record_strings(filename):
     with open(filename) as f:
         data = f.readlines()
+    compiled_search = re.compile(r'.*(\.mobi|\.epub|\.azw).*')
     for line in data:
-        match = re.search(r'.*(\.mobi|\.epub|\.azw).*', line)
+        match = compiled_search.match(line)
         if match:
             yield match.group()
     del data
@@ -53,14 +53,12 @@ def translate_match(match, ipdatabase):
     except TypeError:
         loc_string = loc['country_name']
 
-    download = DownloadRecord(match.group(1), match.group(2), loc_string,
-                              match.group(3))
+    download = DownloadRecord(match.group(1), match.group(2), loc_string, match.group(3))
     return download
 
 
 def download_database():
-    print("database missing or out of date, attempting to download from "
-          "maxmind...")
+    print("database missing or out of date, attempting to download from " "maxmind...")
 
     url = "http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz"
 
@@ -83,8 +81,7 @@ def download_database():
 
         file_size_dl += len(buffer)
         f.write(buffer)
-        status = r"%10d  [%3.2f%%]" % (file_size_dl, file_size_dl * 100. /
-                                       file_size)
+        status = r"%10d  [%3.2f%%]" % (file_size_dl, file_size_dl * 100. / file_size)
         status = status + chr(8) * (len(status) + 1)
         print status,
 
@@ -103,8 +100,7 @@ def locate_logs():
     system = platform.system()
 
     if system == 'Darwin':
-        path = os.path.expanduser(
-            '~/Library/Preferences/calibre/server_access_log.txt')
+        path = os.path.expanduser('~/Library/Preferences/calibre/server_access_log.txt')
 
     elif system == 'Windows':
         appdata = os.getenv('APPDATA')
