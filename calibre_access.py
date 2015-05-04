@@ -27,19 +27,18 @@ DownloadRecord = namedtuple("DownloadRecord", ['ip', 'date', 'location', 'book']
 
 
 def load_record_strings(filename):
-    with open(filename) as f:
-        data = f.readlines()
-    compiled_search = re.compile(r'.*(\.mobi|\.epub|\.azw).*')
-    for line in data:
-        match = compiled_search.match(line)
-        if match:
-            yield match.group()
-    del data
+    compiled_expression = re.compile(r'.*(\.mobi|\.epub|\.azw).*')
+    with open(filename) as fin:
+        for line in fin:
+            match = compiled_expression.match(line)
+            if match:
+                yield match.group()
 
 
 def parse_record(record, ipdatabase):
-    pattern = r'^(\d+\.\d+\.\d+\.\d+).*\[(.*)\].*GET /get/\w+/(.+?\.\w{3,5}) '
-    match = re.search(pattern, record)
+    compiled_expression = re.compile(
+        r'^(\d+\.\d+\.\d+\.\d+).*\[(.*)\].*GET /get/\w+/(.+?\.\w{3,5}) ')
+    match = compiled_expression.search(record)
     if match:
         return translate_match(match, ipdatabase)
 
