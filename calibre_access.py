@@ -114,9 +114,7 @@ def locate_logs():
         if os.path.exists('server_access_log.txt'):
             return 'server_access_log.txt'
         else:
-            print 'ERROR: Could not locate log file.'
-            exit(1)
-
+            raise IOError('Could not locate calibre log File.')
 
 def get_database():
     database_path = os.path.join(USER_DIR, 'GeoLiteCity.dat')
@@ -136,10 +134,16 @@ def main():
     arguments = docopt.docopt(__doc__)
     log_file = arguments["LOGFILE"]
     if not log_file:
-        log_file = locate_logs()
+        try:
+            log_file = locate_logs()
+        except IOError as e:
+            print e.message
+            exit(1)
+
     if not os.path.exists(log_file):
-        print "Given Log file does not exsist!"
+        print "Given Log file does not exist!"
         exit(1)
+
     records = load_record_strings(log_file)
     download_records = []
     ipdatabase = get_database()
