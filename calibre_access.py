@@ -37,13 +37,13 @@ def calibre_downloads(log_file=None):
     """
     if not log_file:
         log_file = locate_logs()
-    records = load_record_strings(log_file)
+    records = get_download_strings(log_file)
     geo_database = get_database()
     for record in records:
-        yield parse_record(record, geo_database)
+        yield parse_download_string(record, geo_database)
 
 
-def load_record_strings(filename):
+def get_download_strings(filename):
     compiled_expression = re.compile(r'.*(\.mobi|\.epub|\.azw).*')
     with open(filename) as fin:
         for line in fin:
@@ -52,7 +52,7 @@ def load_record_strings(filename):
                 yield match.group()
 
 
-def parse_record(record, ipdatabase):
+def parse_download_string(record, ipdatabase):
     compiled_expression = re.compile(
         r'^(\d+\.\d+\.\d+\.\d+).*\[(.*)\].*GET /get/\w+/(.+?\.\w{3,5}) ')
     match = compiled_expression.search(record)
