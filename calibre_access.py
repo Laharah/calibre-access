@@ -23,7 +23,24 @@ import appdirs
 
 APPNAME = 'calibre-access'
 USER_DIR = appdirs.user_data_dir(APPNAME)
-DownloadRecord = namedtuple("DownloadRecord", ['ip', 'date', 'location', 'book'])
+DownloadRecord = namedtuple("DownloadRecord", ['ip', 'date', 'location', 'file'])
+
+
+def calibre_downloads(log_file=None):
+    """
+    Generator to yield parsed and geo-located download records from the calibre
+    server_access_log
+
+    :param log_file: The calibre server_access_log to use. Attempts to locate one if
+    not supplied.
+    :return: a generator of DownloadRecords
+    """
+    if not log_file:
+        log_file = locate_logs()
+    records = load_record_strings(log_file)
+    geo_database = get_database()
+    for record in records:
+        yield parse_record(record, geo_database)
 
 
 def load_record_strings(filename):
@@ -140,20 +157,20 @@ def main():
             print e.message
             exit(1)
 
-    if not os.path.exists(log_file):
-        print "Given Log file does not exist!"
-        exit(1)
+    else:
+        if not os.path.exists(log_file):
+            print "Given Log file does not exist!"
+            exit(1)
 
-    records = load_record_strings(log_file)
-    download_records = []
-    ipdatabase = get_database()
-    for record in records:
-        download_record = parse_record(record, ipdatabase)
-        print download_record
-        download_records.append(download_record)
+    total_records = 0
+    ips = set()
+    for record in calibre_downloads(log_file):
+        print record
+        ips.add(record.ip)
+        total_records += 1
 
-    print "total downloads: {}".format(len(download_records))
-    print "unique ips: {}".format(len({r.ip for r in download_records}))
+    print "Total Downloads: {}".format(total_records)
+    print "Unique Ips: {}".format(len(ips))
 
 
 if __name__ == '__main__':
