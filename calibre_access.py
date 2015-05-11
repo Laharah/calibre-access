@@ -33,7 +33,7 @@ def calibre_downloads(log_file=None):
     server_access_log
 
     :param log_file: The calibre server_access_log to use. Attempts to locate one if
-    not supplied.
+    not supplied. Also accepts '-' for stdin.
     :return: a generator of DownloadRecords
     """
     if not log_file:
@@ -157,14 +157,14 @@ def get_database():
 def main():
     arguments = docopt.docopt(__doc__)
     log_file = arguments["LOGFILE"]
-    if not log_file and sys.stdin.isatty():
+    if not log_file:
         try:
             log_file = locate_logs()
         except IOError as e:
             print e.message
             sys.exit(1)
-    elif not sys.stdin.isatty() or log_file == '-':
-        log_file = '-'
+    elif log_file == '-':
+        pass
     else:
         if not os.path.exists(log_file):
             print "Given Log file does not exist!"
