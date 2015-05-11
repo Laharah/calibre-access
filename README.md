@@ -9,7 +9,7 @@ downloaded.
 
 ###Script Usage###
 
-    calibre-access [LOGFILE]
+    calibre-access [LOGFILE|-]
 
 ###Library Usage###
 

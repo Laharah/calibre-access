@@ -1,7 +1,7 @@
 """
 Script that parses a calibre server log file.
 
-Usage: calibre-access [LOGFILE]
+Usage: calibre-access [LOGFILE|-]
 
 Licensed under the MIT license (see LICENSE)
 """
@@ -15,6 +15,7 @@ import gzip
 import os
 import platform
 import time
+import sys
 
 from collections import namedtuple
 
@@ -44,12 +45,18 @@ def calibre_downloads(log_file=None):
 
 
 def get_download_strings(filename):
+    if filename == '-':
+        fin = sys.stdin
+    else:
+        fin = open(filename, 'rU')
+
     compiled_expression = re.compile(r'.*(\.mobi|\.epub|\.azw).*')
-    with open(filename) as fin:
-        for line in fin:
-            match = compiled_expression.match(line)
-            if match:
-                yield match.group()
+    for line in fin:
+        match = compiled_expression.match(line)
+        if match:
+            yield match.group()
+
+    fin.close()
 
 
 def parse_download_string(record, ipdatabase):
@@ -150,17 +157,18 @@ def get_database():
 def main():
     arguments = docopt.docopt(__doc__)
     log_file = arguments["LOGFILE"]
-    if not log_file:
+    if not log_file and sys.stdin.isatty():
         try:
             log_file = locate_logs()
         except IOError as e:
             print e.message
-            exit(1)
-
+            sys.exit(1)
+    elif not sys.stdin.isatty() or log_file == '-':
+        log_file = '-'
     else:
         if not os.path.exists(log_file):
             print "Given Log file does not exist!"
-            exit(1)
+            sys.exit(1)
 
     total_records = 0
     ips = set()
