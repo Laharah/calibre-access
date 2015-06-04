@@ -29,7 +29,7 @@ DownloadRecord = namedtuple("DownloadRecord", ['ip', 'date', 'location', 'file']
 
 def calibre_downloads(log_file=None):
     """
-    Generator to yield parsed and geo-located download records from the calibre
+    Generator to yield parsed and geo-located records from the calibre
     server_access_log
 
     :param log_file: The calibre server_access_log to use. Attempts to locate one if
@@ -143,11 +143,17 @@ def locate_logs():
 def get_database():
     database_path = os.path.join(USER_DIR, 'GeoLiteCity.dat')
     if not os.path.exists(database_path):
-        database_path = download_database()
+        try:
+            database_path = download_database()
+        except urllib2.URLError:
+            print "Could not download new database... Exiting"
+            sys.exit(1)
 
     if time.time() - os.path.getmtime(database_path) > 2628000:
-        os.remove(database_path)
-        database_path = download_database()
+        try:
+            database_path = download_database()
+        except urllib2.URLError:
+            print "Could not download new database... Using out of date geoip databse!"
 
     ipdatabase = pygeoip.GeoIP(database_path)
 
