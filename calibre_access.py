@@ -25,9 +25,10 @@ import appdirs
 APPNAME = 'calibre-access'
 USER_DIR = appdirs.user_data_dir(APPNAME)
 DownloadRecord = namedtuple("DownloadRecord", ['ip', 'date', 'location', 'file'])
+SearchRecord = namedtuple("SearchRecord", ['ip', 'date', 'location', 'search'])
 
 
-def calibre_downloads(log_file=None):
+def calibre_downloads(log_file=None, record_type='download'):
     """
     Generator to yield parsed and geo-located download records from the calibre
     server_access_log
@@ -36,27 +37,55 @@ def calibre_downloads(log_file=None):
     not supplied. Also accepts '-' for stdin.
     :return: a generator of DownloadRecords
     """
+    # TODO: implement variable get_strings and parse_string
     if not log_file:
         log_file = locate_logs()
     records = get_download_strings(log_file)
     geo_database = get_database()
     for record in records:
-        yield parse_download_string(record, geo_database)
+        parsed = parse_download_string(record, geo_database)
+        if parsed:
+            yield parsed
 
 
 def get_download_strings(filename):
-    if filename == '-':
-        fin = sys.stdin
-    else:
-        fin = open(filename, 'rU')
+    return _get_log_strings(filename, '.*(\.mobi|\.epub|\.azw).*')
 
-    compiled_expression = re.compile(r'.*(\.mobi|\.epub|\.azw).*')
-    for line in fin:
-        match = compiled_expression.match(line)
-        if match:
-            yield match.group()
 
-    fin.close()
+def get_search_strings(filename):
+    return _get_log_strings(filename, '.*POST .*search?query=.*')
+
+
+def _get_log_strings(filename, expression):
+    def get_download_strings(filename):
+        if filename == '-':
+            fin = sys.stdin
+        else:
+            fin = open(filename, 'rU')
+
+        compiled_expression = re.compile(expression)
+        for line in fin:
+            match = compiled_expression.match(line)
+            if match:
+                yield match.group()
+
+        fin.close()
+
+
+def parse_search_string(record, ipdatabse):
+    compiled_expression = re.compile(
+        r'^(\d+\.\d+\.\d+\.\d+).*\[(.+/.+/\d{4}):*+\].*POST .*/search?query=(.+)" "')
+    match = compiled_expression.search(record)
+    if match:
+        translated = translate_match(match, ipdatabse, type='search')
+        try:
+            if translated in parse_search_string.unique_searches:
+                return None
+        except AttributeError:
+            parse_search_string.unique_searches = set(translated)
+        else:
+            parse_search_string.unique_searches.add(translated)
+        return translated
 
 
 def parse_download_string(record, ipdatabase):
@@ -67,7 +96,7 @@ def parse_download_string(record, ipdatabase):
         return translate_match(match, ipdatabase)
 
 
-def translate_match(match, ipdatabase):
+def translate_match(match, ipdatabase, type='download'):
     loc = ipdatabase.record_by_addr(match.group(1))
     if not loc:
         loc = {'city': "NONE", 'region_code': "NONE"}
@@ -76,8 +105,16 @@ def translate_match(match, ipdatabase):
     except TypeError:
         loc_string = loc['country_name']
 
-    download = DownloadRecord(match.group(1), match.group(2), loc_string, match.group(3))
-    return download
+    if type == 'download':
+        record = DownloadRecord(match.group(1), match.group(2), loc_string,
+                               match.group(3))
+    elif type == 'search':
+        record = SearchRecord(match.group(1), match.group(2), loc_string,
+                                match.group(3))
+    else:
+        raise ValueError('Unknown record type: \'{}\''.format(type))
+
+    return record
 
 
 def download_database():
@@ -155,6 +192,7 @@ def get_database():
 
 
 def main():
+    # TODO: option for search parsing
     arguments = docopt.docopt(__doc__)
     log_file = arguments["LOGFILE"]
     if not log_file:
