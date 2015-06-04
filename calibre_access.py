@@ -49,32 +49,32 @@ def calibre_downloads(log_file=None, record_type='download'):
 
 
 def get_download_strings(filename):
-    return _get_log_strings(filename, '.*(\.mobi|\.epub|\.azw).*')
+    return _get_log_strings(filename, r'.*(\.mobi|\.epub|\.azw).*')
 
 
 def get_search_strings(filename):
-    return _get_log_strings(filename, '.*POST .*search?query=.*')
+    return _get_log_strings(filename, r'.*POST .*search\?query=.*')
 
 
 def _get_log_strings(filename, expression):
-    def get_download_strings(filename):
-        if filename == '-':
-            fin = sys.stdin
-        else:
-            fin = open(filename, 'rU')
+    if filename == '-':
+        fin = sys.stdin
+    else:
+        fin = open(filename, 'rU')
 
-        compiled_expression = re.compile(expression)
-        for line in fin:
-            match = compiled_expression.match(line)
-            if match:
-                yield match.group()
+    compiled_expression = re.compile(expression)
+    for line in fin:
+        match = compiled_expression.match(line)
+        if match:
+            yield match.group()
 
-        fin.close()
+    fin.close()
 
 
 def parse_search_string(record, ipdatabse):
     compiled_expression = re.compile(
-        r'^(\d+\.\d+\.\d+\.\d+).*\[(.+/.+/\d{4}):*+\].*POST .*/search?query=(.+)" "')
+        r'^(\d+\.\d+\.\d+\.\d+).*\[(.+/.+/\d{4}):*+\].*POST .*/search\?query=(.+)" "'
+    )
     match = compiled_expression.search(record)
     if match:
         translated = translate_match(match, ipdatabse, type='search')
