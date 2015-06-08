@@ -1,7 +1,9 @@
 """
 Script that parses a calibre server log file.
 
-Usage: calibre-access [LOGFILE|-]
+Usage: calibre-access [LOGFILE|-] [-s]
+
+    -s, --searches    Parse search records instead of download records
 
 Licensed under the MIT license (see LICENSE)
 """
@@ -28,28 +30,54 @@ DownloadRecord = namedtuple("DownloadRecord", ['ip', 'date', 'location', 'file']
 SearchRecord = namedtuple("SearchRecord", ['ip', 'date', 'location', 'search'])
 
 
-def calibre_downloads(log_file=None, record_type='download'):
+def calibre_downloads(log_file=None):
     """
     Generator to yield parsed and geo-located records from the calibre
     server_access_log
 
-    :param log_file: The calibre server_access_log to use. Attempts to locate one if
-    not supplied. Also accepts '-' for stdin.
+    :param log_file: The calibre server_access_log to use. Attempts to locate the log
+    if none supplied
     :return: a generator of DownloadRecords
     """
-    # TODO: implement variable get_strings and parse_string
+    return _get_records_generator(DownloadRecord, log_file=log_file)
+
+
+def calibre_searches(log_file=None):
+    """
+    Generator to yield parsed and geo-located search requests from the calibre
+    server_access_log
+
+    :param log_file: The calibre server_access_log to use. Attempts to locate log if
+    none supplied
+    :return: a generator of SearchRecords
+    """
+    return _get_records_generator(SearchRecord, log_file=log_file)
+
+
+def _get_records_generator(StorageTuple, log_file):
+    # TODO: smarter expression/storage handling: refactor and simplify
+    geo_database = get_database()
+
     if not log_file:
         log_file = locate_logs()
-    records = get_download_strings(log_file)
-    geo_database = get_database()
+    if StorageTuple is DownloadRecord:
+        records = get_download_strings(log_file)
+    else:
+        records = get_search_strings(log_file)
+
+    if StorageTuple is DownloadRecord:
+        parser = parse_download_string
+    else:
+        parser = parse_search_string
+
     for record in records:
-        parsed = parse_download_string(record, geo_database)
+        parsed = parser(record, geo_database)
         if parsed:
             yield parsed
 
 
 def get_download_strings(filename):
-    return _get_log_strings(filename, r'.*(\.mobi|\.epub|\.azw).*')
+    return _get_log_strings(filename, r'.*(\.mobi|\.epub|\.azw|\.azw3).*')
 
 
 def get_search_strings(filename):
@@ -57,10 +85,10 @@ def get_search_strings(filename):
 
 
 def _get_log_strings(filename, expression):
-    if filename == '-':
+    if not isinstance(filename, basestring):
         fin = sys.stdin
     else:
-        fin = open(filename, 'rU')
+        fin = open(filename)
 
     compiled_expression = re.compile(expression)
     for line in fin:
@@ -72,9 +100,16 @@ def _get_log_strings(filename, expression):
 
 
 def parse_search_string(record, ipdatabse):
+    """
+    parses a given search string into a SearchRecord. Prunes repeat searches by
+    returning none if search is not unique (by day).
+    :param record: single search line from calibre access log
+    :param ipdatabse: the ipdatabase to be used for geo-location
+    :return: SearchRecord or None
+    """
+    # Variable accuracy?
     compiled_expression = re.compile(
-        r'^(\d+\.\d+\.\d+\.\d+).*\[(.+/.+/\d{4}):*+\].*POST .*/search\?query=(.+)" "'
-    )
+        r'^(\d+\.\d+\.\d+\.\d+).*\[(.+/.+/\d{4}):.+\].*POST .*/search\?query=(.+)" "')
     match = compiled_expression.search(record)
     if match:
         translated = translate_match(match, ipdatabse, type='search')
@@ -107,10 +142,9 @@ def translate_match(match, ipdatabase, type='download'):
 
     if type == 'download':
         record = DownloadRecord(match.group(1), match.group(2), loc_string,
-                               match.group(3))
-    elif type == 'search':
-        record = SearchRecord(match.group(1), match.group(2), loc_string,
                                 match.group(3))
+    elif type == 'search':
+        record = SearchRecord(match.group(1), match.group(2), loc_string, match.group(3))
     else:
         raise ValueError('Unknown record type: \'{}\''.format(type))
 
@@ -177,6 +211,7 @@ def locate_logs():
         else:
             raise IOError('Could not locate calibre log File.')
 
+
 def get_database():
     database_path = os.path.join(USER_DIR, 'GeoLiteCity.dat')
     if not os.path.exists(database_path):
@@ -208,15 +243,21 @@ def main():
             print e.message
             sys.exit(1)
     elif log_file == '-':
-        pass
+        log_file = sys.stdin
     else:
         if not os.path.exists(log_file):
             print "Given Log file does not exist!"
             sys.exit(1)
 
+    if arguments['--searches']:
+        records = calibre_searches
+    else:
+        records = calibre_downloads
+
     total_records = 0
     ips = set()
-    for record in calibre_downloads(log_file):
+
+    for record in records(log_file):
         print record
         ips.add(record.ip)
         total_records += 1
