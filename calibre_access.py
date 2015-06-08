@@ -233,7 +233,6 @@ def get_database():
 
 
 def main():
-    # TODO: option for search parsing
     arguments = docopt.docopt(__doc__)
     log_file = arguments["LOGFILE"]
     if not log_file:
@@ -262,7 +261,7 @@ def main():
         ips.add(record.ip)
         total_records += 1
 
-    print "Total Downloads: {}".format(total_records)
+    print "Total Records: {}".format(total_records)
     print "Unique Ips: {}".format(len(ips))
 
 
