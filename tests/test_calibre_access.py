@@ -15,8 +15,8 @@ import httpretty
 import calibre_access
 
 
-
 @contextlib.contextmanager
+@pytest.yield_fixture
 def temp_user_dir():
     old_user_dir = calibre_access.USER_DIR
     calibre_access.USER_DIR = tempfile.mkdtemp(prefix='calibre_access')
@@ -106,7 +106,7 @@ class TestLocateLogsOSX():
 class TestLocateLogsWindows():
     p_form = 'Windows'
 
-    def test_windows(self, monkeypatch):
+    def test_windows(self, monkeypatch, mock_platform):
         monkeypatch.setattr('os.path.exists', lambda x: True)
         monkeypatch.setenv('APPDATA', '.')
         assert calibre_access.locate_logs() == os.path.join('.', 'calibre',
@@ -124,7 +124,7 @@ class TestLocateLogsWindows():
 
 
 @pytest.mark.usefixtures('mock_platform')
-class TestLocateLogsWindows():
+class TestLocateLogslinux():
     p_form = 'Linux'
 
     def test_linux(self, monkeypatch):
@@ -142,6 +142,8 @@ class TestLocateLogsWindows():
             calibre_access.locate_logs()
 
 
-
+class TestGetDatabase():
+    def test_(self):
+        pass
 
 pytest.main()
