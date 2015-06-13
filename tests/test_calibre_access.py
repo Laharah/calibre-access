@@ -39,7 +39,6 @@ def redirect_user_expansion(path=None):
 
 @pytest.yield_fixture
 def mock_access_log(request):
-    print dir(request)
     file_path = getattr(request.function, 'mock_log_path', 'server_access_log.txt')
     with open(file_path, 'w') as fout:
         fout.write('fake access data')
@@ -58,7 +57,6 @@ def mock_geolite_download():
                            "http://geolite.maxmind.com/download/geoip/database"
                            "/GeoLiteCity.dat.gz",
                            body=sout.getvalue(), status=200)
-
     yield
     httpretty.disable()
 
@@ -88,23 +86,60 @@ def test_download_database(mock_geolite_download):
 
 @pytest.mark.usefixtures('mock_platform')
 class TestLocateLogsOSX():
-    # TODO: use pytest monkey patch to path exsists and expand user
     p_form = 'Darwin'
-    tmp_dir = tempfile.mkdtemp()
 
-    def test_osx(self, mock_platform, mock_access_log):
-        assert calibre_access.locate_logs() == TestLocateLogsOSX.mock_log_path
+    def test_osx(self, monkeypatch):
+        monkeypatch.setattr('os.path.exists', lambda x: True)
+        assert calibre_access.locate_logs() == os.path.expanduser(
+            '~/Library/Preferences/calibre/server_access_log.txt')
 
-    def test_osx_current_folder(self, mock_platform, mock_access_log):
-        p_form = 'Darwin'
-        with redirect_user_expansion(TestLocateLogsOSX.tmp_dir):
+    def test_osx_current_folder(self, mock_access_log):
+        with redirect_user_expansion():
             assert calibre_access.locate_logs() == 'server_access_log.txt'
 
-    def test_osx_missing(self, mock_platform):
+    def test_osx_missing(self):
         with redirect_user_expansion(), pytest.raises(IOError):
             calibre_access.locate_logs()
 
 
+@pytest.mark.usefixtures('mock_platform')
+class TestLocateLogsWindows():
+    p_form = 'Windows'
+
+    def test_windows(self, monkeypatch):
+        monkeypatch.setattr('os.path.exists', lambda x: True)
+        monkeypatch.setenv('APPDATA', '.')
+        assert calibre_access.locate_logs() == os.path.join('.', 'calibre',
+                                                            'server_access_log.txt')
+
+    def test_windows_current_folder(self, monkeypatch, mock_access_log):
+        monkeypatch.setenv('APPDATA', 'NON EXISTENT!')
+        assert calibre_access.locate_logs() == 'server_access_log.txt'
+
+    def test_windows_missing(self, monkeypatch):
+        monkeypatch.setenv('APPDATA', 'NON EXISTENT')
+        monkeypatch.setattr('os.path.exists', lambda x: False)
+        with pytest.raises(IOError):
+            calibre_access.locate_logs()
+
+
+@pytest.mark.usefixtures('mock_platform')
+class TestLocateLogsWindows():
+    p_form = 'Linux'
+
+    def test_linux(self, monkeypatch):
+        monkeypatch.setattr('os.path.exists', lambda x: True)
+        assert calibre_access.locate_logs() == os.path.expanduser(
+            '~/.config/calibre/server_access_log.txt')
+
+    def test_linux_current_folder(self, mock_access_log):
+        with redirect_user_expansion():
+            assert calibre_access.locate_logs() == 'server_access_log.txt'
+
+    def test_linux_missing(self, monkeypatch):
+        monkeypatch.setattr('os.path.exists', lambda x: False)
+        with pytest.raises(IOError):
+            calibre_access.locate_logs()
 
 
 
