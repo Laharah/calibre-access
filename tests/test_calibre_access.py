@@ -182,7 +182,7 @@ class TestGetDatabase():
         os.utime(mock_geolite_dat, (t, t))
         result = calibre_access.get_database()
         assert result == mock_geo.return_value
-        assert os.path.getmtime(mock_geolite_dat) == t
+        assert abs(os.path.getmtime(mock_geolite_dat) - t) < 1
 
 
 
