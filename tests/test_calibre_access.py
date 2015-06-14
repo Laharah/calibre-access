@@ -185,7 +185,5 @@ class TestGetDatabase():
         assert abs(os.path.getmtime(mock_geolite_dat) - t) < 1
 
 
-
-
-
-pytest.main()
+if __name__ == '__main__':
+    pytest.main()
