@@ -16,7 +16,6 @@ import calibre_access
 
 
 @contextlib.contextmanager
-@pytest.yield_fixture
 def temp_user_dir():
     old_user_dir = calibre_access.USER_DIR
     calibre_access.USER_DIR = tempfile.mkdtemp(prefix='calibre_access')
@@ -25,12 +24,24 @@ def temp_user_dir():
     calibre_access.USER_DIR = old_user_dir
 
 
+@pytest.yield_fixture
+def mock_geolite_dat():
+    with temp_user_dir() as temp_user:
+        path = os.path.join(temp_user, 'GeoLiteCity.dat')
+        with open(path, 'w') as fout:
+            fout.write('Fake Data...')
+        yield path
+        os.remove(path)
+
+
 @contextlib.contextmanager
 def redirect_user_expansion(path=None):
     old = os.path.expanduser
     path = tempfile.mkdtemp() if path is None else path
+
     def new_expand_user(p):
         return p.replace('~', path)
+
     os.path.expanduser = new_expand_user
     yield path
     os.path.expanduser = old
@@ -69,7 +80,6 @@ def mock_platform(request):
     platform.system = mock_platform
     yield
     platform.system = old
-
 
 
 def test_download_database(mock_geolite_download):
@@ -142,8 +152,40 @@ class TestLocateLogslinux():
             calibre_access.locate_logs()
 
 
+@mock.patch('calibre_access.pygeoip.GeoIP', autospec=True)
 class TestGetDatabase():
-    def test_(self):
-        pass
+
+    def test_missing_dat(self, mock_geo, mock_geolite_download):
+        with temp_user_dir() as temp_dir:
+            result = calibre_access.get_database()
+            assert result == mock_geo.return_value
+
+    def test_current_dat(self, mock_geo, mock_geolite_dat):
+        assert calibre_access.get_database() == mock_geo.return_value
+
+    def test_dat_too_old(self, mock_geo, mock_geolite_dat, mock_geolite_download):
+        t = os.path.getmtime(mock_geolite_dat)
+        t -= 2628000
+        os.utime(mock_geolite_dat, (t,t))
+        result = calibre_access.get_database()
+        assert result == mock_geo.return_value
+        assert os.path.getmtime(mock_geolite_dat) - t >= 2628000
+
+    def test_old_dat_no_download(self, mock_geo, mock_geolite_dat, monkeypatch):
+
+        def error_download():
+            raise calibre_access.urllib2.URLError('no internet')
+
+        monkeypatch.setattr('calibre_access.download_database', error_download)
+        t = os.path.getmtime(mock_geolite_dat)
+        t -= 2628000
+        os.utime(mock_geolite_dat, (t, t))
+        result = calibre_access.get_database()
+        assert result == mock_geo.return_value
+        assert os.path.getmtime(mock_geolite_dat) == t
+
+
+
+
 
 pytest.main()

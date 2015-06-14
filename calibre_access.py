@@ -225,6 +225,7 @@ def get_database():
         try:
             database_path = download_database()
         except urllib2.URLError:
+            # TODO: change to warning
             print "Could not download new database... Using out of date geoip databse!"
 
     ipdatabase = pygeoip.GeoIP(database_path)
