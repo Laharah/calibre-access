@@ -2,13 +2,13 @@ from setuptools import setup
 
 setup(
     name='calibre-access',
-    version='0.23.1',
+    version='1.0.1',
     url='',
     license='MIT',
     author='laharah',
     author_email='laharah22+ca@gmail.com',
     description='Quick and dirty log parser for calibre server',
-    py_modules=['calibre_access'],
+    py_modules=['calibre_access', 'utilities'],
     install_requires=[
         'pygeoip >= 0.3',
         'appdirs >= 1.4.0',
