@@ -1,9 +1,15 @@
 """
 Script that parses a calibre server log file.
 
-Usage: calibre-access [LOGFILE|-] [-s]
+Usage: calibre-access [options] [LOGFILE|-]
 
-    -s, --searches    Parse search records instead of download records
+    -d, --downloads   Parse download records (defaut record if none specified)
+    -s, --searches    Parse search records
+    -b, --bare        do not show total records or total unique ip's
+    --time-filter s   number of seconds to filter out non-unique records by.
+                      this filters rapid reloads/downloads. defaults to 10
+
+
 
 Licensed under the MIT license (see LICENSE)
 """
@@ -23,133 +29,99 @@ from collections import namedtuple
 
 import docopt
 import appdirs
+import utilities
 
 APPNAME = 'calibre-access'
 USER_DIR = appdirs.user_data_dir(APPNAME)
-DownloadRecord = namedtuple("DownloadRecord", ['ip', 'date', 'location', 'file'])
-SearchRecord = namedtuple("SearchRecord", ['ip', 'date', 'location', 'search'])
+
+
+def print_record(record):
+    #type, ip, os, date, loc, data
+    line = """{r[host]:15}\t{:12}\t{}\t{r[location]:25}\t{r[type]:9}: {r[info]}"""
+
+    os = record['os']
+    if 'Android' in os:
+        os = 'Android'
+    else:
+        os = os.split()[0].strip(';')
+
+    date = record['datetime'].strftime('%d/%b/%Y:%H:%M:%S')
+
+    print line.format(os, date, r=record)
 
 
 def calibre_downloads(log_file=None):
     """
-    Generator to yield parsed and geo-located records from the calibre
-    server_access_log
+    convienience method: creates a generator of all calibre download records
 
     :param log_file: The calibre server_access_log to use. Attempts to locate the log
     if none supplied
-    :return: a generator of DownloadRecords
+    :return: a generator of parsed log lines regarding file downloads
     """
-    return _get_records_generator(DownloadRecord, log_file=log_file)
+    if not log_file:
+        log_file = locate_logs()
+    lines = get_lines_from_file(log_file)
+    return utilities.get_records(lines, [download_coro])
 
 
 def calibre_searches(log_file=None):
     """
-    Generator to yield parsed and geo-located search requests from the calibre
-    server_access_log
+    convienience method: creates a generator of all calibre search records
 
-    :param log_file: The calibre server_access_log to use. Attempts to locate log if
-    none supplied
-    :return: a generator of SearchRecords
+    :param log_file: The calibre server_access_log to use. Attempts to locate the log
+    if none supplied
+    :return: a generator of parsed log lines regarding search requests
     """
-    return _get_records_generator(SearchRecord, log_file=log_file)
-
-
-def _get_records_generator(StorageTuple, log_file):
-    # TODO: smarter expression/storage handling: refactor and simplify
-    geo_database = get_database()
-
     if not log_file:
         log_file = locate_logs()
-    if StorageTuple is DownloadRecord:
-        records = get_download_strings(log_file)
-    else:
-        records = get_search_strings(log_file)
+    lines = get_lines_from_file(log_file)
+    return utilities.get_records(lines, [search_coro])
 
-    if StorageTuple is DownloadRecord:
-        parser = parse_download_string
-    else:
-        parser = parse_search_string
-
-    for record in records:
-        parsed = parser(record, geo_database)
-        if parsed:
-            yield parsed
+def all_records(log_file=None):
+    if not log_file:
+        log_file = locate_logs()
+    lines = get_lines_from_file(log_file)
+    return utilities.parse_generic_server_log_line(lines)
 
 
-def get_download_strings(filename):
-    return _get_log_strings(filename, r'.*(\.mobi|\.epub|\.azw|\.azw3).*')
+def download_coro():
+    pattern = re.compile(r'.*(\.mobi|\.epub|\.azw|\.azw3|\.pdf)')
+    record = None
+    while True:
+        line = yield record
+        if not pattern.match(line):
+            record = None
+            continue
+        record = next(utilities.parse_generic_server_log_line([line]))
+        record['type'] = 'download'
+        record['file'] = record['request'].split('/')[-1]
+        record['info'] = record['file']
 
 
-def get_search_strings(filename):
-    return _get_log_strings(filename, r'.*POST .*search\?query=.*')
+def search_coro():
+    pattern = re.compile(r'\] "GET /browse/search\?query=(\S*)')
+    record = None
+    while True:
+        line = yield record
+        match = pattern.search(line)
+        if not match:
+            record = None
+            continue
+        record = next(utilities.parse_generic_server_log_line([line]))
+        record['type'] = 'search'
+        record['query'] = match.group(1)
+        record['info'] = match.group(1)
 
 
-def _get_log_strings(filename, expression):
-    if not isinstance(filename, basestring):
-        fin = sys.stdin
-    else:
-        fin = open(filename)
-
-    compiled_expression = re.compile(expression)
-    for line in fin:
-        match = compiled_expression.match(line)
-        if match:
-            yield match.group()
-
-    fin.close()
+def get_lines_from_file(filepath):
+    with open(filepath, 'rU') as f:
+        for line in f:
+            yield line
 
 
-def parse_search_string(record, ipdatabse):
-    """
-    parses a given search string into a SearchRecord. Prunes repeat searches by
-    returning none if search is not unique (by day).
-    :param record: single search line from calibre access log
-    :param ipdatabse: the ipdatabase to be used for geo-location
-    :return: SearchRecord or None
-    """
-    # Variable accuracy?
-    compiled_expression = re.compile(
-        r'^(\d+\.\d+\.\d+\.\d+).*\[(.+/.+/\d{4}):.+\].*POST .*/search\?query=(.+)" "')
-    match = compiled_expression.search(record)
-    if match:
-        translated = translate_match(match, ipdatabse, type='search')
-        try:
-            if translated in parse_search_string.unique_searches:
-                return None
-        except AttributeError:
-            parse_search_string.unique_searches = set(translated)
-        else:
-            parse_search_string.unique_searches.add(translated)
-        return translated
-
-
-def parse_download_string(record, ipdatabase):
-    compiled_expression = re.compile(
-        r'^(\d+\.\d+\.\d+\.\d+).*\[(.*)\].*GET /get/\w+/(.+?\.\w{3,5}) ')
-    match = compiled_expression.search(record)
-    if match:
-        return translate_match(match, ipdatabase)
-
-
-def translate_match(match, ipdatabase, type='download'):
-    loc = ipdatabase.record_by_addr(match.group(1))
-    if not loc:
-        loc = {'city': "NONE", 'region_code': "NONE"}
-    try:
-        loc_string = ', '.join([loc['city'], loc['region_code']])
-    except TypeError:
-        loc_string = loc['country_name']
-
-    if type == 'download':
-        record = DownloadRecord(match.group(1), match.group(2), loc_string,
-                                match.group(3))
-    elif type == 'search':
-        record = SearchRecord(match.group(1), match.group(2), loc_string, match.group(3))
-    else:
-        raise ValueError('Unknown record type: \'{}\''.format(type))
-
-    return record
-
+#########
+#  Section: db_management
+#########
 
 def download_database():
     print("database missing or out of date, attempting to download from " "maxmind...")
@@ -249,21 +221,40 @@ def main():
             print "Given Log file does not exist!"
             sys.exit(1)
 
+    coros = []
     if arguments['--searches']:
-        records = calibre_searches
-    else:
-        records = calibre_downloads
+        coros.append(search_coro)
+    if arguments['--downloads']:
+        coros.append(download_coro)
+    if not coros:
+        coros = [download_coro]
+
+
+    if log_file is not sys.stdin:
+        log_file = get_lines_from_file(log_file)
+
+    ipdatabase = get_database()
+    time_filter = arguments['--time-filter']
+    time_filter = 10 if time_filter is None else int(time_filter)
+
+    records = utilities.get_records(log_file, coros)
+    records = utilities.time_filter(records, time_filter)
+    records = utilities.get_locations(records, ipdatabase)
+    records = utilities.get_os_from_agents(records)
 
     total_records = 0
     ips = set()
 
-    for record in records(log_file):
-        print record
-        ips.add(record.ip)
+    for record in records:
+        print_record(record)
+        ips.add(record['host'])
         total_records += 1
 
-    print "Total Records: {}".format(total_records)
-    print "Unique Ips: {}".format(len(ips))
+    if not arguments['--bare']:
+        print "Total Records: {}".format(total_records)
+        print "Unique Ips: {}".format(len(ips))
+
+
 
 
 if __name__ == '__main__':

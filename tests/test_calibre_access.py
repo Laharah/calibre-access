@@ -13,6 +13,7 @@ import mock
 import httpretty
 
 import calibre_access
+import utilities
 
 
 @contextlib.contextmanager
@@ -22,16 +23,6 @@ def temp_user_dir():
     yield calibre_access.USER_DIR
     shutil.rmtree(calibre_access.USER_DIR)
     calibre_access.USER_DIR = old_user_dir
-
-
-@pytest.yield_fixture
-def mock_geolite_dat():
-    with temp_user_dir() as temp_user:
-        path = os.path.join(temp_user, 'GeoLiteCity.dat')
-        with open(path, 'w') as fout:
-            fout.write('Fake Data...')
-        yield path
-        os.remove(path)
 
 
 @contextlib.contextmanager
@@ -46,6 +37,16 @@ def redirect_user_expansion(path=None):
     yield path
     os.path.expanduser = old
     shutil.rmtree(path)
+
+
+@pytest.yield_fixture
+def mock_geolite_dat():
+    with temp_user_dir() as temp_user:
+        path = os.path.join(temp_user, 'GeoLiteCity.dat')
+        with open(path, 'w') as fout:
+            fout.write('Fake Data...')
+        yield path
+        os.remove(path)
 
 
 @pytest.yield_fixture
@@ -75,8 +76,10 @@ def mock_geolite_download():
 @pytest.yield_fixture
 def mock_platform(request):
     old = platform.system
+
     def mock_platform():
         return getattr(request.cls, 'p_form', 'Linux')
+
     platform.system = mock_platform
     yield
     platform.system = old
@@ -184,6 +187,40 @@ class TestGetDatabase():
         assert result == mock_geo.return_value
         assert abs(os.path.getmtime(mock_geolite_dat) - t) < 1
 
+def test_search_coro():
+    coro = calibre_access.search_coro()
+    next(coro)
+    line = '166.147.101.20 - - [20/Oct/2014:08:18:26] "GET /browse/search?query=dresden+files HTTP/1.1" 200 7814 "http://localhost:8080/browse/search?query=iron+druid" "Mozilla/5.0 (Linux; U; Android 4.2.2; en-us; KFAPWI Build/JDQ39) AppleWebKit/537.36 (KHTML, like Gecko) Silk/3.32 like Chrome/34.0.1847.137 Safari/537.36"'
+    result = coro.send(line)
+    assert result['host'] == '166.147.101.20'
+    assert result['query'] == 'dresden+files'
+    assert result['type'] == 'search'
+    assert result['info'] == result['query']
+
+    line = 'this is not a search line'
+    assert coro.send(line) is None
+
+def test_download_coro():
+    coro = calibre_access.download_coro()
+    next(coro)
+    line = '24.1.110.218 - - [05/Dec/2014:18:54:19] "GET /get/mobi/Devil Said Bang - Richard Kadrey_16536.mobi HTTP/1.1" 200 531748 "http://localhost:8080/browse/search?query=sandman+slim" "Mozilla/5.0 (Linux; U; Android 4.4.3; en-us; KFAPWI Build/KTU84M) AppleWebKit/537.36 (KHTML, like Gecko) Silk/3.40 like Chrome/37.0.2026.117 Safari/537.36"'
+    result = coro.send(line)
+    assert result['host'] == '24.1.110.218'
+    assert result['file'] == 'Devil Said Bang - Richard Kadrey_16536.mobi'
+    assert result['type'] == 'download'
+    assert result['info'] == 'Devil Said Bang - Richard Kadrey_16536.mobi'
+
+    assert coro.send('this is not a download line') is None
+
+def test_seperate_search_download():
+    search = '166.147.101.20 - - [20/Oct/2014:08:18:26] "GET /browse/search?query=dresden+files HTTP/1.1" 200 7814 "http://localhost:8080/browse/search?query=iron+druid" "Mozilla/5.0 (Linux; U; Android 4.2.2; en-us; KFAPWI Build/JDQ39) AppleWebKit/537.36 (KHTML, like Gecko) Silk/3.32 like Chrome/34.0.1847.137 Safari/537.36"'
+    download = '24.1.110.218 - - [05/Dec/2014:18:54:19] "GET /get/mobi/Devil Said Bang - Richard Kadrey_16536.mobi HTTP/1.1" 200 531748 "http://localhost:8080/browse/search?query=sandman+slim" "Mozilla/5.0 (Linux; U; Android 4.4.3; en-us; KFAPWI Build/KTU84M) AppleWebKit/537.36 (KHTML, like Gecko) Silk/3.40 like Chrome/37.0.2026.117 Safari/537.36"'
+    lines = [search, download]
+    coros = calibre_access.search_coro, calibre_access.download_coro
+    results = list(utilities.get_records(lines, coros))
+    assert len(results) == 2
+    assert results[0]['type'] == 'search'
+    assert results[1]['type'] == 'download'
 
 if __name__ == '__main__':
     pytest.main()

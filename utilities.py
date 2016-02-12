@@ -1,27 +1,91 @@
 from __future__ import print_function, unicode_literals
 
 import re
+import datetime
 
-def get_records(lines, pattern_coro_pairs):
+
+def get_records(lines, coroutines):
     """
-    generateor that will match lines against patterns and if they match send the match
-     objects to coroutines that return some structured record.
+    generateor that will feed lines to coroutines and return records.
     Args:
         lines: iterator of log lines
         pattern_coro_pairs: list of tuples in style [(re_pattern, coro), (...)...]
 
     Returns: a generator of records
     """
-    #compile the patterns for speed
-    pairs = [(re.compile(pat), co()) for pat, co in pattern_coro_pairs]
-
-    for _, coro in pairs:  # prime the coroutines
+    coroutines = [coro() for coro in coroutines]
+    for coro in coroutines:  # prime the coroutines
         next(coro)
 
     for line in lines:
-        for pat, coro in pairs:
-            match = pat.search(line)
-            if match:
-                yield coro.send(match)
-    for _, coro in pairs:
+        for coro in coroutines:
+            record = coro.send(line)
+            if record:
+                yield record
+    for coro in coroutines:
         coro.close()
+
+
+def parse_generic_server_log_line(lines):
+    logpats = (r'(\S+) (\S+) (\S+) \[(.*?)\] "(\S+) (.+) (\S+)" (\S+) (\S+) '
+               r'"(\S*)" "(.*)"')
+    fields = ['host', 'identity', 'user', 'datetime', 'method', 'request', 'protocol',
+              'status', 'bytes', 'referer', 'user_agent']
+    for line in lines:
+        data = [g for g in re.match(logpats, line).groups()]
+        d = dict(zip(fields, data))
+        field_map = {
+            'status':   lambda x: int(x),
+            'bytes':    lambda s: int(s) if s != '-' else 0,
+            'datetime': lambda s: datetime.datetime.strptime(s, '%d/%b/%Y:%H:%M:%S'),
+        }
+        for field, func in field_map.items():
+            d[field] = func(d[field])
+        yield d
+
+
+def get_os_from_agents(records):
+    pat = re.compile(r'\S+ \((.+)\).*')
+    for record in records:
+        m = pat.match(record['user_agent'])
+        record['os'] = m.group(1) if m else ''
+        yield record
+
+
+def get_locations(records, ipdatabase):
+    for record in records:
+        ip = record['host']
+        loc = ipdatabase.record_by_addr(ip)
+        if not loc:
+            loc = {'city': "NONE", 'region_code': "NONE"}
+        try:
+            loc_string = ', '.join([loc['city'], loc['region_code']])
+        except TypeError:
+            loc_string = loc['country_name']
+        record['location'] = loc_string
+        yield record
+
+def time_filter(records, seconds):
+    """filters identical records who's time differs by less than seconds"""
+    delta = datetime.timedelta(seconds)
+    records = iter(records)
+    previous = next(records)
+    yield previous
+    current = None
+    fields = [
+        'host',
+        'type',
+        'user_agent',
+        'info']
+
+    for record in records:
+        current = record
+        for field in fields:
+            if current[field] != previous[field]:
+                yield current
+                break
+        else:
+            if previous['datetime'] + delta < current['datetime']:
+                yield current
+
+        previous = current
