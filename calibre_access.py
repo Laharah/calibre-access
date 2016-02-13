@@ -56,11 +56,11 @@ def print_record(record):
     print line.format(op, date, r=record)
 
 
-def calibre_downloads(log_file=None):
+def calibre_downloads(log_path=None):
     """
     convienience method: creates a generator of all calibre download records
 
-    :param log_file: The calibre server_access_log to use. Attempts to locate the log
+    :param log_path: The calibre server_access_log to use. Attempts to locate the log
     if none supplied
     :return: a generator of parsed log lines regarding file downloads
     """
