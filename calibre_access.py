@@ -44,7 +44,10 @@ def print_record(record):
     if 'Android' in os:
         os = 'Android'
     else:
-        os = os.split()[0].strip(';')
+        try:
+            os = os.split()[0].strip(';')
+        except IndexError:
+            os = os
 
     date = record['datetime'].strftime('%d/%b/%Y:%H:%M:%S')
 
