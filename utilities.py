@@ -52,6 +52,21 @@ def get_os_from_agents(records):
         yield record
 
 
+def coro_from_gen(gen):
+    def input_pipe():
+        x = ''
+        while True:
+            x = yield x
+            yield
+    i = input_pipe()
+    next(i)
+    g = gen(i)
+    x = yield
+    while True:
+        i.send(x)
+        x = yield next(g)
+
+
 def get_locations(records, ipdatabase):
     for record in records:
         ip = record['host']
