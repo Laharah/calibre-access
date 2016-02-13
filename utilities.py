@@ -53,15 +53,17 @@ def get_os_from_agents(records):
 
 
 def coro_from_gen(gen):
+    """turn a normal generator into a coroutine"""
     def input_pipe():
+        """small internal coroutine that recieves data"""
         x = ''
         while True:
             x = yield x
-            yield
+            yield  # to keep the generator in lock step with input
     i = input_pipe()
-    next(i)
+    next(i)  # prime the input coroutune
     g = gen(i)
-    n = yield
+    n = yield  # get first item
     while True:
         i.send(n)
         n = yield next(g)
