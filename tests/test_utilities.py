@@ -64,6 +64,16 @@ def test_parse_generic_log_line():
     }
     assert next(result) == parsed
 
+def test_coro_from_gen():
+    def square(nums):
+        for n in nums:
+            yield n*n
+
+    coro = utilities.coro_from_gen(square)
+    next(coro)
+    results = [coro.send(x) for x in range(10)]
+    assert results == [0, 1, 4, 9, 16, 25, 36, 49, 64, 81]
+
 
 def test_get_locations():
     mock_ipdb = mock.MagicMock()
@@ -82,7 +92,7 @@ def test_get_locations():
            'time_zone':     'America/New_York'}
 
     mock_ipdb.record_by_addr = mock.Mock(return_value=None)
-    ips = [{'host':'1'} for _ in range(3)]
+    ips = [{'host':str(i)} for i in range(3)]
     loc = utilities.get_locations(ips, mock_ipdb)
     assert next(loc)['location'] == 'NONE, NONE'
     mock_ipdb.record_by_addr = mock.Mock(return_value=rec)
