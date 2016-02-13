@@ -61,16 +61,22 @@ def coro_from_gen(gen):
     i = input_pipe()
     next(i)
     g = gen(i)
-    x = yield
+    n = yield
     while True:
-        i.send(x)
-        x = yield next(g)
+        i.send(n)
+        n = yield next(g)
 
 
 def get_locations(records, ipdatabase):
+    cache = {}
     for record in records:
         ip = record['host']
-        loc = ipdatabase.record_by_addr(ip)
+        try:
+            loc = cache[ip]
+        except KeyError:
+            loc = ipdatabase.record_by_addr(ip)
+            cache[ip] = loc
+        # loc = ipdatabase.record_by_addr(ip)
         if not loc:
             loc = {'city': "NONE", 'region_code': "NONE"}
         try:
