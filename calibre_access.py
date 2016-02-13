@@ -36,6 +36,7 @@ USER_DIR = appdirs.user_data_dir(APPNAME)
 
 
 def print_record(record):
+    """ prints a download/search record to the terminal in a standardized way"""
     #type, ip, os, date, loc, data
     line = """{r[host]:15}\t{:12}\t{}\t{r[location]:25}\t{r[type]:9}: {r[info]}"""
 
@@ -78,6 +79,9 @@ def calibre_searches(log_file=None):
     return utilities.get_records(lines, [search_coro])
 
 def all_records(log_file=None):
+    """
+    convienience function to create a generator of all parsed calibre-webserver Records.
+    """
     if not log_file:
         log_file = locate_logs()
     lines = get_lines_from_file(log_file)
@@ -85,6 +89,7 @@ def all_records(log_file=None):
 
 
 def download_coro():
+    """ coroutine to filter and parse download records"""
     pattern = re.compile(r'.*(\.mobi|\.epub|\.azw|\.azw3|\.pdf)')
     record = None
     while True:
@@ -99,6 +104,7 @@ def download_coro():
 
 
 def search_coro():
+    """coroutine to filter and parse search records"""
     pattern = re.compile(r'\] "GET /browse/search\?query=(\S*)')
     record = None
     while True:
@@ -185,6 +191,7 @@ def locate_logs():
 
 
 def get_database():
+    """returns the pygeoip database, downloads if out of date or missing"""
     database_path = os.path.join(USER_DIR, 'GeoLiteCity.dat')
     if not os.path.exists(database_path):
         try:
