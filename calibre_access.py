@@ -94,37 +94,33 @@ def all_records(log_file=None):
 def download_coro():
     """ coroutine to filter and parse download records"""
     pattern = re.compile(r'.*(\.mobi|\.epub|\.azw|\.azw3|\.pdf)')
-    record = None
     record_coro = utilities.coro_from_gen(utilities.parse_generic_server_log_line)
     next(record_coro)
     while True:
-        line = yield record
+        line = yield
         if not pattern.match(line):
-            record = None
             continue
         record = record_coro.send(line)
         record['type'] = 'download'
         record['file'] = record['request'].split('/')[-1]
         record['info'] = record['file']
-
+        yield record
 
 def search_coro():
     """coroutine to filter and parse search records"""
     pattern = re.compile(r'\] "GET /browse/search\?query=(\S*)')
-    record = None
     record_coro = utilities.coro_from_gen(utilities.parse_generic_server_log_line)
     next(record_coro)
     while True:
-        line = yield record
+        line = yield
         match = pattern.search(line)
         if not match:
-            record = None
             continue
         record = record_coro.send(line)
         record['type'] = 'search'
         record['query'] = match.group(1)
         record['info'] = match.group(1)
-
+        yield record
 
 def get_lines_from_file(filepath):
     with open(filepath, 'rU') as f:
