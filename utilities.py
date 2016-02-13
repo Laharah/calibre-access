@@ -52,7 +52,7 @@ def get_os_from_agents(records):
         yield record
 
 
-def coro_from_gen(gen):
+def coro_from_gen(generator):
     """turn a normal generator into a coroutine"""
     def input_pipe():
         """small internal coroutine that recieves data"""
@@ -60,13 +60,13 @@ def coro_from_gen(gen):
         while True:
             x = yield x
             yield  # to keep the generator in lock step with input
-    i = input_pipe()
-    next(i)  # prime the input coroutune
-    g = gen(i)
+    pipe = input_pipe()
+    next(pipe)  # prime the input coroutune
+    gen = generator(pipe)
     n = yield  # get first item
     while True:
-        i.send(n)
-        n = yield next(g)
+        pipe.send(n)
+        n = yield next(gen)
 
 
 def get_locations(records, ipdatabase):
