@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 """
 Script that parses a calibre server log file.
 
@@ -40,18 +42,18 @@ def print_record(record):
     #type, ip, os, date, loc, data
     line = """{r[host]:15}\t{:12}\t{}\t{r[location]:25}\t{r[type]:9}: {r[info]}"""
 
-    os = record['os']
-    if 'Android' in os:
-        os = 'Android'
+    op = record['os']
+    if 'Android' in op:
+        op = 'Android'
     else:
         try:
-            os = os.split()[0].strip(';')
+            op = op.split()[0].strip(';')
         except IndexError:
-            os = os
+            op = op
 
     date = record['datetime'].strftime('%d/%b/%Y:%H:%M:%S')
 
-    print line.format(os, date, r=record)
+    print line.format(op, date, r=record)
 
 
 def calibre_downloads(log_file=None):
@@ -62,32 +64,32 @@ def calibre_downloads(log_file=None):
     if none supplied
     :return: a generator of parsed log lines regarding file downloads
     """
-    if not log_file:
-        log_file = locate_logs()
-    lines = get_lines_from_file(log_file)
+    if not log_path:
+        log_path = locate_logs()
+    lines = get_lines_from_file(log_path)
     return utilities.get_records(lines, [download_coro])
 
 
-def calibre_searches(log_file=None):
+def calibre_searches(log_path=None):
     """
     convienience method: creates a generator of all calibre search records
 
-    :param log_file: The calibre server_access_log to use. Attempts to locate the log
+    :param log_path: The calibre server_access_log to use. Attempts to locate the log
     if none supplied
     :return: a generator of parsed log lines regarding search requests
     """
-    if not log_file:
-        log_file = locate_logs()
-    lines = get_lines_from_file(log_file)
+    if not log_path:
+        log_path = locate_logs()
+    lines = get_lines_from_file(log_path)
     return utilities.get_records(lines, [search_coro])
 
-def all_records(log_file=None):
+def all_records(log_path=None):
     """
     convienience function to create a generator of all parsed calibre-webserver Records.
     """
-    if not log_file:
-        log_file = locate_logs()
-    lines = get_lines_from_file(log_file)
+    if not log_path:
+        log_path = locate_logs()
+    lines = get_lines_from_file(log_path)
     return utilities.parse_generic_server_log_line(lines)
 
 
