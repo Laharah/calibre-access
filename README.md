@@ -30,4 +30,14 @@ for record in calibre_access.calibre_searches():
     print record['location'], record['query']
 ```
 
-That's it!
+###Installation###
+
+you can either clone the repository then test/install with:
+```bash
+python setup.py test
+python setup.py install
+```
+
+or you can install directly with pip:
+
+    pip install git+https://github.com/Laharah/calibre-access.git
