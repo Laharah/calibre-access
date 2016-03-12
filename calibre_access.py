@@ -27,7 +27,6 @@ import sys
 
 from collections import namedtuple
 
-import docopt
 import appdirs
 import utilities
 
@@ -220,6 +219,8 @@ def get_database():
 
 
 def main():
+    import docopt
+
     arguments = docopt.docopt(__doc__)
     log_file = arguments["LOGFILE"]
     if not log_file:
