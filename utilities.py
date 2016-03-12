@@ -9,7 +9,7 @@ def get_records(lines, coroutines):
     generateor that will feed lines to coroutines and return records.
     Args:
         lines: iterator of log lines
-        pattern_coro_pairs: list of tuples in style [(re_pattern, coro), (...)...]
+        coroutines: list of coroutine functions for parsing the records
 
     Returns: a generator of records
     """
@@ -78,7 +78,6 @@ def get_locations(records, ipdatabase):
         except KeyError:
             loc = ipdatabase.record_by_addr(ip)
             cache[ip] = loc
-        # loc = ipdatabase.record_by_addr(ip)
         if not loc:
             loc = {'city': "NONE", 'region_code': "NONE"}
         try:
@@ -89,7 +88,7 @@ def get_locations(records, ipdatabase):
         yield record
 
 def time_filter(records, seconds):
-    """filters identical records who's time differs by less than seconds"""
+    """filters identical records who's time differs by less than x seconds"""
     delta = datetime.timedelta(seconds)
     records = iter(records)
     previous = next(records)

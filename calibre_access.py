@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 """
 Script that parses a calibre server log file.
 
@@ -42,87 +40,91 @@ def print_record(record):
     #type, ip, os, date, loc, data
     line = """{r[host]:15}\t{:12}\t{}\t{r[location]:25}\t{r[type]:9}: {r[info]}"""
 
-    op = record['os']
-    if 'Android' in op:
-        op = 'Android'
+    os = record['os']
+    if 'Android' in os:
+        os = 'Android'
     else:
         try:
-            op = op.split()[0].strip(';')
+            os = os.split()[0].strip(';')
         except IndexError:
-            op = op
+            os = os
 
     date = record['datetime'].strftime('%d/%b/%Y:%H:%M:%S')
 
-    print line.format(op, date, r=record)
+    print line.format(os, date, r=record)
 
 
-def calibre_downloads(log_path=None):
+def calibre_downloads(log_file=None):
     """
     convienience method: creates a generator of all calibre download records
 
-    :param log_path: The calibre server_access_log to use. Attempts to locate the log
+    :param log_file: The calibre server_access_log to use. Attempts to locate the log
     if none supplied
     :return: a generator of parsed log lines regarding file downloads
     """
-    if not log_path:
-        log_path = locate_logs()
-    lines = get_lines_from_file(log_path)
+    if not log_file:
+        log_file = locate_logs()
+    lines = get_lines_from_file(log_file)
     return utilities.get_records(lines, [download_coro])
 
 
-def calibre_searches(log_path=None):
+def calibre_searches(log_file=None):
     """
     convienience method: creates a generator of all calibre search records
 
-    :param log_path: The calibre server_access_log to use. Attempts to locate the log
+    :param log_file: The calibre server_access_log to use. Attempts to locate the log
     if none supplied
     :return: a generator of parsed log lines regarding search requests
     """
-    if not log_path:
-        log_path = locate_logs()
-    lines = get_lines_from_file(log_path)
+    if not log_file:
+        log_file = locate_logs()
+    lines = get_lines_from_file(log_file)
     return utilities.get_records(lines, [search_coro])
 
-def all_records(log_path=None):
+def all_records(log_file=None):
     """
     convienience function to create a generator of all parsed calibre-webserver Records.
     """
-    if not log_path:
-        log_path = locate_logs()
-    lines = get_lines_from_file(log_path)
+    if not log_file:
+        log_file = locate_logs()
+    lines = get_lines_from_file(log_file)
     return utilities.parse_generic_server_log_line(lines)
 
 
 def download_coro():
     """ coroutine to filter and parse download records"""
     pattern = re.compile(r'.*(\.mobi|\.epub|\.azw|\.azw3|\.pdf)')
+    record = None
     record_coro = utilities.coro_from_gen(utilities.parse_generic_server_log_line)
     next(record_coro)
     while True:
-        line = yield
+        line = yield record
         if not pattern.match(line):
+            record = None
             continue
         record = record_coro.send(line)
         record['type'] = 'download'
         record['file'] = record['request'].split('/')[-1]
         record['info'] = record['file']
-        yield record
+
 
 def search_coro():
     """coroutine to filter and parse search records"""
     pattern = re.compile(r'\] "GET /browse/search\?query=(\S*)')
+    record = None
     record_coro = utilities.coro_from_gen(utilities.parse_generic_server_log_line)
     next(record_coro)
     while True:
-        line = yield
+        line = yield record
         match = pattern.search(line)
         if not match:
+            record = None
             continue
         record = record_coro.send(line)
         record['type'] = 'search'
         record['query'] = match.group(1)
         record['info'] = match.group(1)
-        yield record
+
 
 def get_lines_from_file(filepath):
     with open(filepath, 'rU') as f:
@@ -246,13 +248,13 @@ def main():
         log_file = get_lines_from_file(log_file)
 
     ipdatabase = get_database()
-    time_filter = arguments['--time-filter']
-    time_filter = 10 if time_filter is None else int(time_filter)
+    time_filter_len = arguments['--time-filter']
+    time_filter_len = 10 if time_filter_len is None else int(time_filter_len)
 
-    records = utilities.get_records(log_file, coros)
-    records = utilities.time_filter(records, time_filter)
-    records = utilities.get_locations(records, ipdatabase)
-    records = utilities.get_os_from_agents(records)
+    base_records = utilities.get_records(log_file, coros)
+    time_filtered = utilities.time_filter(base_records, time_filter_len)
+    geo_located = utilities.get_locations(time_filtered, ipdatabase)
+    records = utilities.get_os_from_agents(geo_located)
 
     total_records = 0
     ips = set()
