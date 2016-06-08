@@ -13,8 +13,8 @@ import pytest
 import mock
 import httpretty
 
-import calibre_access
-import utilities
+import calibre_access.calibre_access as calibre_access
+import calibre_access.utilities as utilities
 
 
 @contextlib.contextmanager
@@ -156,7 +156,7 @@ class TestLocateLogslinux():
             calibre_access.locate_logs()
 
 
-@mock.patch('calibre_access.pygeoip.GeoIP', autospec=True)
+@mock.patch('calibre_access.calibre_access.pygeoip.GeoIP', autospec=True)
 class TestGetDatabase():
 
     def test_missing_dat(self, mock_geo, mock_geolite_download):
@@ -180,7 +180,7 @@ class TestGetDatabase():
         def error_download():
             raise calibre_access.requests.ConnectionError('no internet')
 
-        monkeypatch.setattr('calibre_access.download_database', error_download)
+        monkeypatch.setattr('calibre_access.calibre_access.download_database', error_download)
         t = os.path.getmtime(mock_geolite_dat)
         t -= 2628000
         os.utime(mock_geolite_dat, (t, t))

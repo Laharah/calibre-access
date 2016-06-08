@@ -27,7 +27,7 @@ import sys
 
 import appdirs
 import requests
-import utilities
+from . import utilities
 
 APPNAME = 'calibre-access'
 USER_DIR = appdirs.user_data_dir(APPNAME)
@@ -155,7 +155,7 @@ def download_database():
         for chunk in r.iter_content(chunksize):
             downloaded += len(chunk)
             status = '[{: <50}] {:02}% done'
-            status = status.format('#' * int(downloaded // (file_size / 50)),
+            status = status.format('#' * (1 + int(downloaded // (file_size / 50))),
                                    int((downloaded / file_size) * 100))
             print(status, end='\r')
             f.write(chunk)
@@ -263,7 +263,3 @@ def main():
     if not arguments['--bare']:
         print("Total Records: {}".format(total_records))
         print("Unique Ips: {}".format(len(ips)))
-
-
-if __name__ == '__main__':
-    main()

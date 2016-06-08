@@ -8,7 +8,7 @@ setup(
     author='laharah',
     author_email='laharah22+ca@gmail.com',
     description='Quick and dirty log parser for calibre server',
-    py_modules=['calibre_access', 'utilities'],
+    packages=['calibre_access'],
     setup_requires=['pytest-runner'],
     install_requires=[
         'pygeoip >= 0.3',
@@ -23,7 +23,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'calibre-access = calibre_access:main'
+            'calibre-access = calibre_access.calibre_access:main'
         ]
     }
 
