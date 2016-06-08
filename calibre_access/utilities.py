@@ -35,8 +35,8 @@ def parse_generic_server_log_line(lines):
         data = [g for g in re.match(logpats, line).groups()]
         d = dict(zip(fields, data))
         field_map = {
-            'status':   lambda x: int(x),
-            'bytes':    lambda s: int(s) if s != '-' else 0,
+            'status': lambda x: int(x),
+            'bytes': lambda s: int(s) if s != '-' else 0,
             'datetime': lambda s: datetime.datetime.strptime(s, '%d/%b/%Y:%H:%M:%S'),
         }
         for field, func in field_map.items():
@@ -54,12 +54,14 @@ def get_os_from_agents(records):
 
 def coro_from_gen(generator):
     """turn a normal generator into a coroutine"""
+
     def input_pipe():
         """small internal coroutine that recieves data"""
         x = ''
         while True:
             x = yield x
             yield  # to keep the generator in lock step with input
+
     pipe = input_pipe()
     next(pipe)  # prime the input coroutune
     gen = generator(pipe)
@@ -87,6 +89,7 @@ def get_locations(records, ipdatabase):
         record['location'] = loc_string
         yield record
 
+
 def time_filter(records, seconds):
     """filters identical records who's time differs by less than x seconds"""
     delta = datetime.timedelta(seconds)
@@ -94,11 +97,7 @@ def time_filter(records, seconds):
     previous = next(records)
     yield previous
     current = None
-    fields = [
-        'host',
-        'type',
-        'user_agent',
-        'info']
+    fields = ['host', 'type', 'user_agent', 'info']
 
     for record in records:
         current = record
