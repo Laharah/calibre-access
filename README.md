@@ -10,7 +10,7 @@ each IP.
 If the maxmind geolite database is not present or out of date, it will be
 downloaded.
 
-supports python 2.7, 3.3, 3.4, and 3.5
+supports python 2.7, 3.3, 3.4, and 3.5; OS-X, Linux, Windows
 
 ###Script Usage###
 
