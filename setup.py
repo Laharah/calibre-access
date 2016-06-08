@@ -23,7 +23,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'calibre-access = calibre_access.calibre_access:main'
+            'calibre-access = calibre_access.__main__:main'
         ]
     }
 
