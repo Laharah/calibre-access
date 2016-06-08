@@ -14,6 +14,7 @@ setup(
         'pygeoip >= 0.3',
         'appdirs >= 1.4.0',
         'docopt >= 0.5.0',
+        'requests',
     ],
     tests_require=[
         'pytest >= 2.8.7',

@@ -1,4 +1,5 @@
-"""
+from __future__ import unicode_literals, print_function, division
+__doc__ = """
 Script that parses a calibre server log file.
 
 Usage: calibre-access [options] [LOGFILE|-]
@@ -18,16 +19,14 @@ __author__ = 'laharah'
 
 import pygeoip
 import re
-import urllib2
 import gzip
 import os
 import platform
 import time
 import sys
 
-from collections import namedtuple
-
 import appdirs
+import requests
 import utilities
 
 APPNAME = 'calibre-access'
@@ -50,7 +49,7 @@ def print_record(record):
 
     date = record['datetime'].strftime('%d/%b/%Y:%H:%M:%S')
 
-    print line.format(os, date, r=record)
+    print(line.format(os, date, r=record))
 
 
 def calibre_downloads(log_file=None):
@@ -79,6 +78,7 @@ def calibre_searches(log_file=None):
         log_file = locate_logs()
     lines = get_lines_from_file(log_file)
     return utilities.get_records(lines, [search_coro])
+
 
 def all_records(log_file=None):
     """
@@ -130,10 +130,10 @@ def get_lines_from_file(filepath):
         for line in f:
             yield line
 
-
 #########
 #  Section: db_management
 #########
+
 
 def download_database():
     print("database missing or out of date, attempting to download from " "maxmind...")
@@ -144,33 +144,29 @@ def download_database():
         os.makedirs(USER_DIR)
 
     file_name = os.path.join(USER_DIR, url.split('/')[-1])
-    u = urllib2.urlopen(url)
-    f = open(file_name, 'wb')
-    meta = u.info()
-    file_size = int(meta.getheaders("Content-Length")[0])
-    print "Downloading: %s Bytes: %s" % (file_name, file_size)
+    r = requests.get(url, stream=True)
+    file_size = int(r.headers['Content-Length'])
+    print("Downloading: %s Bytes: %s" % (file_name, file_size))
 
-    file_size_dl = 0
-    block_sz = 8192
-    while True:
-        buffer = u.read(block_sz)
-        if not buffer:
-            break
+    downloaded = 0
+    chunksize = 8192
+    print('\n', end='')
+    with open(file_name, 'wb') as f:
+        for chunk in r.iter_content(chunksize):
+            downloaded += len(chunk)
+            status = '[{: <50}] {:02}% done'
+            status = status.format('#' * int(downloaded // (file_size / 50)),
+                                   int((downloaded / file_size) * 100))
+            print(status, end='\r')
+            f.write(chunk)
 
-        file_size_dl += len(buffer)
-        f.write(buffer)
-        status = r"%10d  [%3.2f%%]" % (file_size_dl, file_size_dl * 100. / file_size)
-        status = status + chr(8) * (len(status) + 1)
-        print status,
-
-    f.close()
-    print "\nuncompressing..."
+    print("\nuncompressing...")
     with open(file_name[:-3], 'wb') as uncompressed:
         with gzip.open(file_name, 'rb') as compressed:
             uncompressed.write(compressed.read())
-    print "cleaning up..."
+    print("cleaning up...")
     os.remove(file_name)
-    print "Done!"
+    print("Done!")
     return file_name[:-3]
 
 
@@ -202,16 +198,16 @@ def get_database():
     if not os.path.exists(database_path):
         try:
             database_path = download_database()
-        except urllib2.URLError:
-            print "Could not download new database... Exiting"
+        except requests.ConnectionError:
+            print("Could not download new database... Exiting")
             sys.exit(1)
 
     if time.time() - os.path.getmtime(database_path) > 2628000:
         try:
             database_path = download_database()
-        except urllib2.URLError:
+        except requests.ConnectionError:
             # TODO: change to warning
-            print "Could not download new database... Using out of date geoip databse!"
+            print("Could not download new database... Using out of date geoip databse!")
 
     ipdatabase = pygeoip.GeoIP(database_path)
 
@@ -227,13 +223,13 @@ def main():
         try:
             log_file = locate_logs()
         except IOError as e:
-            print e.message
+            print(e.message)
             sys.exit(1)
     elif log_file == '-':
         log_file = sys.stdin
     else:
         if not os.path.exists(log_file):
-            print "Given Log file does not exist!"
+            print("Given Log file does not exist!")
             sys.exit(1)
 
     coros = []
@@ -243,7 +239,6 @@ def main():
         coros.append(download_coro)
     if not coros:
         coros = [download_coro]
-
 
     if log_file is not sys.stdin:
         log_file = get_lines_from_file(log_file)
@@ -266,10 +261,8 @@ def main():
         total_records += 1
 
     if not arguments['--bare']:
-        print "Total Records: {}".format(total_records)
-        print "Unique Ips: {}".format(len(ips))
-
-
+        print("Total Records: {}".format(total_records))
+        print("Unique Ips: {}".format(len(ips)))
 
 
 if __name__ == '__main__':

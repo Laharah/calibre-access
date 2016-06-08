@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 __author__ = 'laharah'
 
 import tempfile
@@ -5,7 +6,7 @@ import os
 import contextlib
 import shutil
 import gzip
-import StringIO
+from io import BytesIO
 import platform
 
 import pytest
@@ -61,9 +62,9 @@ def mock_access_log(request):
 @pytest.yield_fixture
 def mock_geolite_download():
     httpretty.enable()
-    sout = StringIO.StringIO()
-    with gzip.GzipFile(fileobj=sout, mode='w') as f:
-        f.write('Mocked geolite data...')
+    sout = BytesIO()
+    with gzip.GzipFile(fileobj=sout, mode='wb') as f:
+        f.write(b'Mocked geolite data...')
 
     httpretty.register_uri(httpretty.GET,
                            "http://geolite.maxmind.com/download/geoip/database"
@@ -159,7 +160,7 @@ class TestLocateLogslinux():
 class TestGetDatabase():
 
     def test_missing_dat(self, mock_geo, mock_geolite_download):
-        with temp_user_dir() as temp_dir:
+        with temp_user_dir():
             result = calibre_access.get_database()
             assert result == mock_geo.return_value
 
@@ -177,7 +178,7 @@ class TestGetDatabase():
     def test_old_dat_no_download(self, mock_geo, mock_geolite_dat, monkeypatch):
 
         def error_download():
-            raise calibre_access.urllib2.URLError('no internet')
+            raise calibre_access.requests.ConnectionError('no internet')
 
         monkeypatch.setattr('calibre_access.download_database', error_download)
         t = os.path.getmtime(mock_geolite_dat)
