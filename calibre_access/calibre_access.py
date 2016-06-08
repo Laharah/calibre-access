@@ -24,6 +24,7 @@ import os
 import platform
 import time
 import sys
+import warnings
 
 import appdirs
 import requests
@@ -136,7 +137,9 @@ def get_lines_from_file(filepath):
 
 
 def download_database():
-    print("database missing or out of date, attempting to download from " "maxmind...")
+    print("database missing or out of date, attempting to download from "
+          "maxmind...",
+          file=sys.stderr)
 
     url = "http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz"
 
@@ -146,7 +149,7 @@ def download_database():
     file_name = os.path.join(USER_DIR, url.split('/')[-1])
     r = requests.get(url, stream=True)
     file_size = int(r.headers['Content-Length'])
-    print("Downloading: %s Bytes: %s" % (file_name, file_size))
+    print("Downloading: %s Bytes: %s" % (file_name, file_size), file=sys.stderr)
 
     downloaded = 0
     chunksize = 8192
@@ -157,16 +160,16 @@ def download_database():
             status = '[{: <50}] {:02}% done'
             status = status.format('#' * (1 + int(downloaded // (file_size / 50))),
                                    int((downloaded / file_size) * 100))
-            print(status, end='\r')
+            print(status, end='\r', file=sys.stderr)
             f.write(chunk)
 
-    print("\nuncompressing...")
+    print("\nuncompressing...", file=sys.stderr)
     with open(file_name[:-3], 'wb') as uncompressed:
         with gzip.open(file_name, 'rb') as compressed:
             uncompressed.write(compressed.read())
-    print("cleaning up...")
+    print("cleaning up...", file=sys.stderr)
     os.remove(file_name)
-    print("Done!")
+    print("Done!", file=sys.stderr)
     return file_name[:-3]
 
 
@@ -199,15 +202,14 @@ def get_database():
         try:
             database_path = download_database()
         except requests.ConnectionError:
-            print("Could not download new database... Exiting")
-            sys.exit(1)
+            raise
 
     if time.time() - os.path.getmtime(database_path) > 2628000:
         try:
             database_path = download_database()
         except requests.ConnectionError:
-            # TODO: change to warning
-            print("Could not download new database... Using out of date geoip databse!")
+            warnings.warn("Could not download new database... "
+                          "Using out of date geoip databse!")
 
     ipdatabase = pygeoip.GeoIP(database_path)
 
@@ -223,13 +225,13 @@ def main():
         try:
             log_file = locate_logs()
         except IOError as e:
-            print(e.message)
+            print(e, file=sys.stderr)
             sys.exit(1)
     elif log_file == '-':
         log_file = sys.stdin
     else:
         if not os.path.exists(log_file):
-            print("Given Log file does not exist!")
+            print("Given Log file does not exist!", file=sys.stderr)
             sys.exit(1)
 
     coros = []
@@ -243,7 +245,12 @@ def main():
     if log_file is not sys.stdin:
         log_file = get_lines_from_file(log_file)
 
-    ipdatabase = get_database()
+    try:
+        ipdatabase = get_database()
+    except requests.ConnectionError as e:
+        print("Could not connect to Maxmind to download new database, Exiting!",
+              file=sys.stderr)
+        sys.exit(1)
     time_filter_len = arguments['--time-filter']
     time_filter_len = 10 if time_filter_len is None else int(time_filter_len)
 
@@ -263,3 +270,5 @@ def main():
     if not arguments['--bare']:
         print("Total Records: {}".format(total_records))
         print("Unique Ips: {}".format(len(ips)))
+
+    sys.exit(0)
