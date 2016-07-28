@@ -1,7 +1,25 @@
 from __future__ import print_function, unicode_literals
 
 import re
+import gzip
 import datetime
+
+
+def get_lines_from_logs(logs):
+    """
+    Given a series of log files, yield one line at a time from them.
+    Args:
+        logs: iterable of log files in text or gzip format
+    """
+    for log in logs:
+        if log.endswith('gz'):
+            with gzip.open(log, mode='rt') as fin:
+                for line in fin:
+                    yield line
+        else:
+            with open(log) as fin:
+                for line in fin:
+                    yield line
 
 
 def get_records(lines, coroutines):

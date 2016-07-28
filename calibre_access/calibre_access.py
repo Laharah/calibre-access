@@ -22,6 +22,7 @@ import re
 import gzip
 import os
 import platform
+import glob
 import time
 import sys
 import warnings
@@ -53,41 +54,41 @@ def print_record(record):
     print(line.format(os, date, r=record))
 
 
-def calibre_downloads(log_file=None):
+def calibre_downloads(log_files=None):
     """
     convienience method: creates a generator of all calibre download records
 
-    :param log_file: The calibre server_access_log to use. Attempts to locate the log
+    :param log_files: The calibre server_access_log to use. Attempts to locate the log
     if none supplied
     :return: a generator of parsed log lines regarding file downloads
     """
-    if not log_file:
-        log_file = locate_logs()
-    lines = get_lines_from_file(log_file)
+    if not log_files:
+        log_files = locate_logs()
+    lines = utilities.get_lines_from_logs(log_files)
     return utilities.get_records(lines, [download_coro])
 
 
-def calibre_searches(log_file=None):
+def calibre_searches(log_files=None):
     """
     convienience method: creates a generator of all calibre search records
 
-    :param log_file: The calibre server_access_log to use. Attempts to locate the log
+    :param log_files: The calibre server_access_log to use. Attempts to locate the log
     if none supplied
     :return: a generator of parsed log lines regarding search requests
     """
-    if not log_file:
-        log_file = locate_logs()
-    lines = get_lines_from_file(log_file)
+    if not log_files:
+        log_files = locate_logs()
+    lines = utilities.get_lines_from_logs(log_files)
     return utilities.get_records(lines, [search_coro])
 
 
-def all_records(log_file=None):
+def all_records(log_files=None):
     """
     convienience function to create a generator of all parsed calibre-webserver Records.
     """
-    if not log_file:
-        log_file = locate_logs()
-    lines = get_lines_from_file(log_file)
+    if not log_files:
+        log_files = locate_logs()
+    lines = utilities.get_lines_from_logs(log_files)
     return utilities.parse_generic_server_log_line(lines)
 
 
@@ -124,12 +125,6 @@ def search_coro():
         record['type'] = 'search'
         record['query'] = match.group(1)
         record['info'] = match.group(1)
-
-
-def get_lines_from_file(filepath):
-    with open(filepath, 'rU') as f:
-        for line in f:
-            yield line
 
 #########
 #  Section: db_management
@@ -173,26 +168,31 @@ def download_database():
     return file_name[:-3]
 
 
-def locate_logs():
+def get_search_dir():
     system = platform.system()
-
     if system == 'Darwin':
-        path = os.path.expanduser('~/Library/Preferences/calibre/server_access_log.txt')
+        path = os.path.expanduser('~/Library/Preferences/calibre')
 
     elif system == 'Windows':
         appdata = os.getenv('APPDATA')
-        path = os.path.join(appdata, 'calibre', 'server_access_log.txt')
+        path = os.path.join(appdata, 'calibre')
 
     else:
-        path = os.path.expanduser('~/.config/calibre/server_access_log.txt')
+        path = os.path.expanduser('~/.config/calibre')
+    return path
+
+
+def locate_logs():
+    path = get_search_dir()
 
     if os.path.exists(path):
-        return path
+        return glob.glob(os.path.join(path, 'server_access_log.txt*'))
+
+    local = glob.glob('server_access_log.txt*')
+    if not local:
+        raise IOError('Could not locate calibre log File.')
     else:
-        if os.path.exists('server_access_log.txt'):
-            return 'server_access_log.txt'
-        else:
-            raise IOError('Could not locate calibre log File.')
+        return local
 
 
 def get_database():
@@ -243,7 +243,7 @@ def main():
         coros = [download_coro]
 
     if log_file is not sys.stdin:
-        log_file = get_lines_from_file(log_file)
+        log_file = utilities.get_lines_from_logs(log_file)
 
     try:
         ipdatabase = get_database()

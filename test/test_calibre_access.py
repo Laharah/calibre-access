@@ -1,90 +1,15 @@
 from __future__ import unicode_literals
 __author__ = 'laharah'
 
-import tempfile
-import os
-import contextlib
-import shutil
-import gzip
-from io import BytesIO
-import platform
-
 import pytest
 import mock
-import httpretty
+import os
+import shutil
+
+from fixtures import *
 
 import calibre_access.calibre_access as calibre_access
 import calibre_access.utilities as utilities
-
-
-@contextlib.contextmanager
-def temp_user_dir():
-    old_user_dir = calibre_access.USER_DIR
-    calibre_access.USER_DIR = tempfile.mkdtemp(prefix='calibre_access')
-    yield calibre_access.USER_DIR
-    shutil.rmtree(calibre_access.USER_DIR)
-    calibre_access.USER_DIR = old_user_dir
-
-
-@contextlib.contextmanager
-def redirect_user_expansion(path=None):
-    old = os.path.expanduser
-    path = tempfile.mkdtemp() if path is None else path
-
-    def new_expand_user(p):
-        return p.replace('~', path)
-
-    os.path.expanduser = new_expand_user
-    yield path
-    os.path.expanduser = old
-    shutil.rmtree(path)
-
-
-@pytest.yield_fixture
-def mock_geolite_dat():
-    with temp_user_dir() as temp_user:
-        path = os.path.join(temp_user, 'GeoLiteCity.dat')
-        with open(path, 'w') as fout:
-            fout.write('Fake Data...')
-        yield path
-        os.remove(path)
-
-
-@pytest.yield_fixture
-def mock_access_log(request):
-    file_path = getattr(request.function, 'mock_log_path', 'server_access_log.txt')
-    with open(file_path, 'w') as fout:
-        fout.write('fake access data')
-    yield file_path
-    os.remove(file_path)
-
-
-@pytest.yield_fixture
-def mock_geolite_download():
-    httpretty.enable()
-    sout = BytesIO()
-    with gzip.GzipFile(fileobj=sout, mode='wb') as f:
-        f.write(b'Mocked geolite data...')
-
-    httpretty.register_uri(httpretty.GET,
-                           "http://geolite.maxmind.com/download/geoip/database"
-                           "/GeoLiteCity.dat.gz",
-                           body=sout.getvalue(),
-                           status=200)
-    yield
-    httpretty.disable()
-
-
-@pytest.yield_fixture
-def mock_platform(request):
-    old = platform.system
-
-    def mock_platform():
-        return getattr(request.cls, 'p_form', 'Linux')
-
-    platform.system = mock_platform
-    yield
-    platform.system = old
 
 
 def test_download_database(mock_geolite_download):
@@ -103,14 +28,17 @@ def test_download_database(mock_geolite_download):
 class TestLocateLogsOSX():
     p_form = 'Darwin'
 
-    def test_osx(self, monkeypatch):
-        monkeypatch.setattr('os.path.exists', lambda x: True)
-        assert calibre_access.locate_logs() == os.path.expanduser(
-            '~/Library/Preferences/calibre/server_access_log.txt')
-
-    def test_osx_current_folder(self, mock_access_log):
+    def test_get_search_dir(self):
         with redirect_user_expansion():
-            assert calibre_access.locate_logs() == 'server_access_log.txt'
+            assert calibre_access.get_search_dir() == os.path.expanduser(
+                '~/Library/Preferences/calibre')
+
+    def test_osx(self, mock_access_logs_default):
+        assert calibre_access.locate_logs() == mock_access_logs_default
+
+    def test_osx_current_folder(self, mock_access_logs_local):
+        with redirect_user_expansion():
+            assert calibre_access.locate_logs() == mock_access_logs_local
 
     def test_osx_missing(self):
         with redirect_user_expansion(), pytest.raises(IOError):
@@ -121,15 +49,16 @@ class TestLocateLogsOSX():
 class TestLocateLogsWindows():
     p_form = 'Windows'
 
-    def test_windows(self, monkeypatch, mock_platform):
-        monkeypatch.setattr('os.path.exists', lambda x: True)
+    def test_get_search_dir(self, monkeypatch):
         monkeypatch.setenv('APPDATA', '.')
-        assert calibre_access.locate_logs() == os.path.join('.', 'calibre',
-                                                            'server_access_log.txt')
+        assert calibre_access.get_search_dir() == os.path.join('.', 'calibre')
 
-    def test_windows_current_folder(self, monkeypatch, mock_access_log):
+    def test_windows(self, monkeypatch, mock_access_logs_default):
+        assert calibre_access.locate_logs() == mock_access_logs_default
+
+    def test_windows_current_folder(self, monkeypatch, mock_access_logs_local):
         monkeypatch.setenv('APPDATA', 'NON EXISTENT!')
-        assert calibre_access.locate_logs() == 'server_access_log.txt'
+        assert calibre_access.locate_logs() == mock_access_logs_local
 
     def test_windows_missing(self, monkeypatch):
         monkeypatch.setenv('APPDATA', 'NON EXISTENT')
@@ -142,14 +71,17 @@ class TestLocateLogsWindows():
 class TestLocateLogslinux():
     p_form = 'Linux'
 
-    def test_linux(self, monkeypatch):
-        monkeypatch.setattr('os.path.exists', lambda x: True)
-        assert calibre_access.locate_logs() == os.path.expanduser(
-            '~/.config/calibre/server_access_log.txt')
-
-    def test_linux_current_folder(self, mock_access_log):
+    def test_get_search_dir(self):
         with redirect_user_expansion():
-            assert calibre_access.locate_logs() == 'server_access_log.txt'
+            assert calibre_access.get_search_dir() == os.path.expanduser(
+                '~/.config/calibre')
+
+    def test_linux(self, mock_access_logs_default):
+        assert calibre_access.locate_logs() == mock_access_logs_default
+
+    def test_linux_current_folder(self, mock_access_logs_local):
+        with redirect_user_expansion():
+            assert calibre_access.locate_logs() == mock_access_logs_local
 
     def test_linux_missing(self, monkeypatch):
         monkeypatch.setattr('os.path.exists', lambda x: False)

@@ -5,6 +5,12 @@ import re
 import datetime
 import mock
 import copy
+from fixtures import mock_access_logs_local
+
+
+def test_get_lines_from_logs(mock_access_logs_local):
+    lines = ['fake access data\n'] * 8
+    assert list(utilities.get_lines_from_logs(mock_access_logs_local)) == lines
 
 
 def test_get_records():
@@ -43,7 +49,6 @@ def test_get_os_from_agents():
     parsed = list(utilities.get_os_from_agents(agent_strings))
     assert parsed[0]['os'] == 'Windows NT 6.1; WOW64; rv:28.0'
     assert parsed[1]['os'] == ''
-
 
 
 def test_parse_generic_log_line():
