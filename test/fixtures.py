@@ -79,7 +79,7 @@ def create_logs(base_path=None):
             with open(path, 'w') as fout:
                 fout.write('fake access data\nfake access data\n')
     try:
-        yield file_paths
+        yield list(reversed(file_paths))  #reversed so newest is last
     finally:
         for path in file_paths:
             os.remove(path)
