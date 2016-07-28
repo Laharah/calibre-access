@@ -7,6 +7,7 @@ import os
 import shutil
 
 from fixtures import *
+import httpretty
 
 import calibre_access.calibre_access as calibre_access
 import calibre_access.utilities as utilities
@@ -123,6 +124,15 @@ class TestGetDatabase():
         result = calibre_access.get_database()
         assert result == mock_geo.return_value
         assert abs(os.path.getmtime(mock_geolite_dat) - t) < 1
+
+    def test_force_refresh(self, mock_geo, mock_geolite_download, mock_geolite_dat):
+        httpretty.reset()
+        result = calibre_access.get_database()
+        assert httpretty.has_request() == False
+        assert result == mock_geo.return_value
+        result = calibre_access.get_database(force_refresh=True)
+        assert result == mock_geo.return_value
+        assert httpretty.has_request() == True
 
 
 def test_search_coro():

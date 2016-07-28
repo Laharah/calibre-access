@@ -9,6 +9,7 @@ Usage: calibre-access [options] [LOGFILE|-]
     -b, --bare        do not show total records or total unique ip's
     --time-filter s   number of seconds to filter out non-unique records by.
                       this filters rapid reloads/downloads. defaults to 10
+    --force-refresh   Force a refresh of the GeoLite database
 
 
 
@@ -197,7 +198,7 @@ def locate_logs():
         return sorted(local, reverse=True)
 
 
-def get_database():
+def get_database(force_refresh=False):
     """returns the pygeoip database, downloads if out of date or missing"""
     database_path = os.path.join(USER_DIR, 'GeoLiteCity.dat')
     if not os.path.exists(database_path):
@@ -206,7 +207,7 @@ def get_database():
         except requests.ConnectionError:
             raise
 
-    if time.time() - os.path.getmtime(database_path) > 2628000:
+    if (time.time() - os.path.getmtime(database_path) > 2628000 or force_refresh):
         try:
             database_path = download_database()
         except requests.ConnectionError:
@@ -248,7 +249,7 @@ def main():
         log_file = utilities.get_lines_from_logs(log_file)
 
     try:
-        ipdatabase = get_database()
+        ipdatabase = get_database(arguments['--force-refresh'])
     except requests.ConnectionError as e:
         print("Could not connect to Maxmind to download new database, Exiting!",
               file=sys.stderr)
