@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='calibre-access',
-    version='1.2.0',
+    version='1.2.1',
     url='',
     license='MIT',
     author='laharah',
