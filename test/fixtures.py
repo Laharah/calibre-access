@@ -11,6 +11,8 @@ import contextlib
 import platform
 from io import BytesIO
 
+import pytest
+
 import calibre_access.calibre_access as calibre_access
 
 
@@ -23,18 +25,16 @@ def temp_user_dir():
     calibre_access.USER_DIR = old_user_dir
 
 
-@contextlib.contextmanager
-def redirect_user_expansion(path=None):
-    old = os.path.expanduser
-    path = tempfile.mkdtemp() if path is None else path
+@pytest.yield_fixture
+def user_expansion(monkeypatch):
+    path = tempfile.mkdtemp()
 
     def new_expand_user(p):
         return p.replace('~', path)
 
-    os.path.expanduser = new_expand_user
+    monkeypatch.setattr('os.path.expanduser', new_expand_user)
+    monkeypatch.setenv('APPDATA', path)
     yield path
-    os.path.expanduser = old
-    shutil.rmtree(path)
 
 
 @pytest.yield_fixture
@@ -48,38 +48,46 @@ def mock_geolite_dat():
 
 
 @pytest.yield_fixture
-def mock_access_logs_default(request, mock_platform, monkeypatch):
-    monkeypatch.setenv('APPDATA', '.')
-    with redirect_user_expansion():
-        base_path = calibre_access.get_search_dir()
-        with create_logs(base_path=base_path) as file_paths:
-            yield file_paths
+def mock_access_logs_default(request, user_expansion):
+    base_path = calibre_access.get_search_dir()
+    with create_logs(base_path=base_path) as file_paths:
+        yield file_paths
 
 
 @pytest.yield_fixture
-def mock_access_logs_local():
-    with create_logs() as file_paths:
-        yield file_paths
-
+def mock_access_logs_local(tmpdir):
+    p = tmpdir
+    old = p.chdir()
+    try:
+        with create_logs() as file_paths:
+            yield file_paths
+    finally:
+        old.chdir()
 
 @contextlib.contextmanager
 def create_logs(base_path=None):
     file_paths = ['server_access_log.txt', 'server_access_log.txt.1',
                   'server_access_log.txt.2.gz', 'server_access_log.txt.3.gz']
+    if base_path:
+        os.makedirs(base_path)
+        file_paths = [os.path.join(base_path, p) for p in file_paths]
     for path in file_paths:
-        if base_path:
-            os.path.join(base_path, path)
-        if not path.endswith('gz'):
-            with open(path, 'w') as fout:
+        if path.endswith('gz'):
+            with gzip.open(path, mode='wt') as fout:
                 fout.write('fake access data\nfake access data\n')
         else:
-            with gzip.open(path, mode='wt') as fout:
+            with open(path, 'w') as fout:
                 fout.write('fake access data\nfake access data\n')
     try:
         yield file_paths
     finally:
         for path in file_paths:
             os.remove(path)
+        if base_path:
+            try:
+                os.removedirs(base_path)
+            except FileNotFoundError:
+                pass
 
 
 @pytest.yield_fixture

@@ -29,29 +29,30 @@ class TestLocateLogsOSX():
     p_form = 'Darwin'
 
     def test_get_search_dir(self):
-        with redirect_user_expansion():
-            assert calibre_access.get_search_dir() == os.path.expanduser(
-                '~/Library/Preferences/calibre')
+        assert calibre_access.get_search_dir() == os.path.expanduser(
+            '~/Library/Preferences/calibre')
 
     def test_osx(self, mock_access_logs_default):
         assert calibre_access.locate_logs() == mock_access_logs_default
 
-    def test_osx_current_folder(self, mock_access_logs_local):
-        with redirect_user_expansion():
-            assert calibre_access.locate_logs() == mock_access_logs_local
+    def test_osx_current_folder(self, mock_access_logs_local, user_expansion):
+        assert calibre_access.locate_logs() == mock_access_logs_local
 
-    def test_osx_missing(self):
-        with redirect_user_expansion(), pytest.raises(IOError):
-            calibre_access.locate_logs()
+    def test_osx_missing(self, user_expansion, tmpdir):
+        p = tmpdir.chdir()
+        try:
+            with pytest.raises(IOError):
+                print(calibre_access.locate_logs())
+        finally:
+            p.chdir()
 
 
 @pytest.mark.usefixtures('mock_platform')
 class TestLocateLogsWindows():
     p_form = 'Windows'
 
-    def test_get_search_dir(self, monkeypatch):
-        monkeypatch.setenv('APPDATA', '.')
-        assert calibre_access.get_search_dir() == os.path.join('.', 'calibre')
+    def test_get_search_dir(self, monkeypatch, user_expansion):
+        assert calibre_access.get_search_dir() == os.path.join(user_expansion, 'calibre')
 
     def test_windows(self, monkeypatch, mock_access_logs_default):
         assert calibre_access.locate_logs() == mock_access_logs_default
@@ -60,11 +61,14 @@ class TestLocateLogsWindows():
         monkeypatch.setenv('APPDATA', 'NON EXISTENT!')
         assert calibre_access.locate_logs() == mock_access_logs_local
 
-    def test_windows_missing(self, monkeypatch):
-        monkeypatch.setenv('APPDATA', 'NON EXISTENT')
-        monkeypatch.setattr('os.path.exists', lambda x: False)
-        with pytest.raises(IOError):
-            calibre_access.locate_logs()
+    def test_windows_missing(self, monkeypatch, tmpdir):
+        try:
+            p = tmpdir.chdir()
+            monkeypatch.setenv('APPDATA', 'NON EXISTENT')
+            with pytest.raises(IOError):
+                calibre_access.locate_logs()
+        finally:
+            p.chdir()
 
 
 @pytest.mark.usefixtures('mock_platform')
@@ -72,21 +76,21 @@ class TestLocateLogslinux():
     p_form = 'Linux'
 
     def test_get_search_dir(self):
-        with redirect_user_expansion():
-            assert calibre_access.get_search_dir() == os.path.expanduser(
-                '~/.config/calibre')
+        assert calibre_access.get_search_dir() == os.path.expanduser('~/.config/calibre')
 
     def test_linux(self, mock_access_logs_default):
         assert calibre_access.locate_logs() == mock_access_logs_default
 
-    def test_linux_current_folder(self, mock_access_logs_local):
-        with redirect_user_expansion():
-            assert calibre_access.locate_logs() == mock_access_logs_local
+    def test_linux_current_folder(self, mock_access_logs_local, user_expansion):
+        assert calibre_access.locate_logs() == mock_access_logs_local
 
-    def test_linux_missing(self, monkeypatch):
-        monkeypatch.setattr('os.path.exists', lambda x: False)
-        with pytest.raises(IOError):
-            calibre_access.locate_logs()
+    def test_linux_missing(self, user_expansion, tmpdir):
+        p = tmpdir.chdir()
+        try:
+            with pytest.raises(IOError):
+                calibre_access.locate_logs()
+        finally:
+            p.chdir()
 
 
 @mock.patch('calibre_access.calibre_access.pygeoip.GeoIP', autospec=True)
