@@ -186,13 +186,15 @@ def locate_logs():
     path = get_search_dir()
 
     if os.path.exists(path):
-        return list(reversed(glob.glob(os.path.join(path, 'server_access_log.txt*'))))
+        return sorted(
+            glob.glob(os.path.join(path, 'server_access_log.txt*')),
+            reverse=True)
 
     local = glob.glob('server_access_log.txt*')
     if not local:
         raise IOError('Could not locate calibre log File.')
     else:
-        return list(reversed(local))
+        return sorted(local, reverse=True)
 
 
 def get_database():
