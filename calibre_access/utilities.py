@@ -45,18 +45,32 @@ def get_records(lines, coroutines):
 
 
 def parse_generic_server_log_line(lines):
-    logpats = (r'(\S+) (\S+) (\S+) \[(.*?)\] "(\S+) (.+) (\S+)" (\S+) (\S+) '
-               r'"(\S*)" "(.*)"')
-    fields = ['host', 'identity', 'user', 'datetime', 'method', 'request', 'protocol',
-              'status', 'bytes', 'referer', 'user_agent']
+    logpats = re.compile(r'(\S+) (\S+) (\S+) \[?(.*?)\]? (-\d+ )?"(.*?)" (\S+) (\S+) ?(.*)?')
+    request_pat = re.compile(r'(\S+) (.+) (\S+)')
+    #request_line = 'method' 'request' 'protocol'
+    fields = ['host', 'identity', 'user', 'datetime', 'timezone', 'request_line',
+              'status', 'bytes', 'ref/uagent']
     for line in lines:
-        data = [g for g in re.match(logpats, line).groups()]
+        data = [g for g in logpats.match(line).groups()]
         d = dict(zip(fields, data))
+        try:
+            req = request_pat.match(d['request_line'])
+            d['method'], d['request'], d['protocol'] = req.groups()
+        except AttributeError:
+            d['method'], d['request'], d['protocol'] = None, None, None
+        finally:
+            del d['request_line']
+        if d['ref/uagent']:
+            d['referer'], d['user_agent'] = re.findall(r'"(.*?)"', d['ref/uagent'])
+        else:
+            d['referer'], d['user_agent'] = None, None
+        del d['ref/uagent']
         field_map = {
             'status': lambda x: int(x),
             'bytes': lambda s: int(s) if s != '-' else 0,
             'datetime': lambda s: datetime.datetime.strptime(s, '%d/%b/%Y:%H:%M:%S'),
         }
+
         for field, func in field_map.items():
             d[field] = func(d[field])
         yield d

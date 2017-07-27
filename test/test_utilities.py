@@ -59,6 +59,7 @@ def test_parse_generic_log_line():
         'identity':   '-',
         'user':       '-',
         'datetime':   datetime.datetime(2014, 11, 13, 19, 38, 49),
+        'timezone':   None,
         'method':     'GET',
         'request':    '/get/azw3/The Slow Regard of Silent Things (Tales From Temerant) - Patrick Rothfuss_16638.azw3',
         'protocol':   'HTTP/1.1',
