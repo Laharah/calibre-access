@@ -236,6 +236,7 @@ def main():
         if not os.path.exists(log_file):
             print("Given Log file does not exist!", file=sys.stderr)
             sys.exit(1)
+        log_file = [log_file]
 
     coros = []
     if arguments['--searches']:
