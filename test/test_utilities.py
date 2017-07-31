@@ -67,13 +67,34 @@ def test_parse_generic_log_line():
         'bytes':      4215864,
         'referer':    'http://localhost:8080/browse/category/newest',
         'user_agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:28.0) Gecko/20100101 Firefox/28.0',
-    }
+    }  # yapf: disable
     assert next(result) == parsed
+
+
+def test_parse_v3_log_line():
+    line = r'192.168.0.1 port-56702 - 29/Jul/2017:09:26:37 -0700 "GET /get/cover/21469/Calibre_Library HTTP/1.1" 200 459389'
+    result = utilities.parse_generic_server_log_line([line])
+    parsed = {
+        'host':       '192.168.0.1',
+        'identity':   'port-56702',
+        'user':       '-',
+        'datetime':   datetime.datetime(2017, 7, 29, 9, 26, 37),
+        'timezone':   '-0700 ',
+        'method':     'GET',
+        'request':    '/get/cover/21469/Calibre_Library',
+        'protocol':   'HTTP/1.1',
+        'status':     200,
+        'bytes':      459389,
+        'referer':    None,
+        'user_agent': None,
+    }  # yapf: disable
+    assert next(result) == parsed
+
 
 def test_coro_from_gen():
     def square(nums):
         for n in nums:
-            yield n*n
+            yield n * n
 
     coro = utilities.coro_from_gen(square)
     next(coro)
@@ -83,28 +104,31 @@ def test_coro_from_gen():
 
 def test_get_locations():
     mock_ipdb = mock.MagicMock()
-    rec = {'area_code': 828,
-           'city':          'Asheville',
-           'continent':     'NA',
-           'country_code':  'US',
-           'country_code3': 'USA',
-           'country_name':  'United States',
-           'dma_code':      567,
-           'latitude':      35.568299999999994,
-           'longitude':     -82.6272,
-           'metro_code':    'Greenville-Spartenburg, SC',
-           'postal_code':   '28806',
-           'region_code':   'NC',
-           'time_zone':     'America/New_York'}
+    rec = {
+        'area_code': 828,
+        'city': 'Asheville',
+        'continent': 'NA',
+        'country_code': 'US',
+        'country_code3': 'USA',
+        'country_name': 'United States',
+        'dma_code': 567,
+        'latitude': 35.568299999999994,
+        'longitude': -82.6272,
+        'metro_code': 'Greenville-Spartenburg, SC',
+        'postal_code': '28806',
+        'region_code': 'NC',
+        'time_zone': 'America/New_York'
+    }
 
     mock_ipdb.record_by_addr = mock.Mock(return_value=None)
-    ips = [{'host':str(i)} for i in range(3)]
+    ips = [{'host': str(i)} for i in range(3)]
     loc = utilities.get_locations(ips, mock_ipdb)
     assert next(loc)['location'] == 'NONE, NONE'
     mock_ipdb.record_by_addr = mock.Mock(return_value=rec)
     assert next(loc)['location'] == 'Asheville, NC'
     rec['region_code'] = None
     assert next(loc)['location'] == 'United States'
+
 
 def test_time_filter():
     record1 = {
