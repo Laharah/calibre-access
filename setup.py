@@ -17,7 +17,7 @@ setup(
         'requests',
     ],
     extras_require={
-        ':python_version<"3.4"': ['pathlib2'],
+        ':python_version<"3.5"': ['pathlib2'],
     },
     tests_require=[
         'pytest >= 2.8.7',

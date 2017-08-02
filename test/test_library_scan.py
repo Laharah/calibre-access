@@ -3,7 +3,7 @@ import calibre_access.library_scan as ls
 import sys
 from fixtures import mock_lib_dir
 
-if sys.version_info.major == 3:
+if sys.version_info > (3,4):
     from pathlib import Path
 else:
     from pathlib2 import Path

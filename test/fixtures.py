@@ -16,7 +16,7 @@ import pytest
 
 import calibre_access.calibre_access as calibre_access
 
-if sys.version_info.major == 3:
+if sys.version_info > (3, 5):
     from pathlib import Path
 else:
     from pathlib2 import Path

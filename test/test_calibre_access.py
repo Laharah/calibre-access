@@ -16,11 +16,11 @@ import calibre_access.utilities as utilities
 def test_download_database(mock_geolite_download):
     with temp_user_dir():
         shutil.rmtree(calibre_access.USER_DIR)
-        assert calibre_access.download_database() == os.path.join(calibre_access.USER_DIR,
-                                                                  'GeoLiteCity.dat')
+        assert calibre_access.download_database() == os.path.join(
+            calibre_access.USER_DIR, 'GeoLiteCity.dat')
         assert os.path.exists(calibre_access.USER_DIR)
-        assert not os.path.exists(os.path.join(calibre_access.USER_DIR,
-                                               'GeoLiteCity.dat.gz'))
+        assert not os.path.exists(
+            os.path.join(calibre_access.USER_DIR, 'GeoLiteCity.dat.gz'))
         with open(os.path.join(calibre_access.USER_DIR, 'GeoLiteCity.dat')) as fin:
             assert fin.read() == 'Mocked geolite data...'
 
@@ -126,7 +126,7 @@ class TestGetDatabase():
         assert result == mock_geo.return_value
         assert abs(os.path.getmtime(mock_geolite_dat) - t) < 1
 
-    @pytest.mark.skipif(sys.version_info.major < 3, reason="mock problem")
+    @pytest.mark.skipif(sys.version_info < (3, 4), reason="mock problem")
     def test_force_refresh(self, mock_geo, mock_geolite_download, mock_geolite_dat):
         httpretty.reset()
         result = calibre_access.get_database()
