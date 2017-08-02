@@ -1,9 +1,12 @@
 import sys
 import re
+import json
+
 if sys.version_info.major == 3:
     from pathlib import Path
 else:
     from pathlib2 import Path
+
 
 def scan_lib(libpath):
     libpath = Path(libpath)
@@ -20,3 +23,13 @@ def scan_lib(libpath):
 
             books[id] = title
     return books
+
+
+def write_cache(lib_ids, fout):
+    with open(fout, 'w') as f:
+        json.dump(lib_ids, f)
+
+
+def load_cache(cache_file):
+    with open(cache_file, 'r') as f:
+        return json.load(f)
