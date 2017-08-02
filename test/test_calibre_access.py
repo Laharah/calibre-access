@@ -125,6 +125,7 @@ class TestGetDatabase():
         assert result == mock_geo.return_value
         assert abs(os.path.getmtime(mock_geolite_dat) - t) < 1
 
+    @pytest.mark.skipif(sys.version_info.major < 3, reason="mock problem")
     def test_force_refresh(self, mock_geo, mock_geolite_download, mock_geolite_dat):
         httpretty.reset()
         result = calibre_access.get_database()
