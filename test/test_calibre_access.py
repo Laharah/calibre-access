@@ -121,7 +121,8 @@ class TestGetDatabase():
         t = os.path.getmtime(mock_geolite_dat)
         t -= 2628000
         os.utime(mock_geolite_dat, (t, t))
-        result = calibre_access.get_database()
+        with pytest.warns(UserWarning):
+            result = calibre_access.get_database()
         assert result == mock_geo.return_value
         assert abs(os.path.getmtime(mock_geolite_dat) - t) < 1
 
@@ -131,7 +132,8 @@ class TestGetDatabase():
         result = calibre_access.get_database()
         assert httpretty.has_request() == False
         assert result == mock_geo.return_value
-        result = calibre_access.get_database(force_refresh=True)
+        with pytest.warns(UserWarning):
+            result = calibre_access.get_database(force_refresh=True)
         assert result == mock_geo.return_value
         assert httpretty.has_request() == True
 
