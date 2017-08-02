@@ -16,6 +16,9 @@ setup(
         'docopt >= 0.5.0',
         'requests',
     ],
+    extras_require={
+        ':python_version<"3.4"': ['pathlib2'],
+    },
     tests_require=[
         'pytest >= 2.8.7',
         'mock >= 1.3.0',
