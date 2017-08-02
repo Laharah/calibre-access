@@ -49,7 +49,7 @@ def mock_lib_dir():
     try:
         yield root
     finally:
-        shutil.rmtree(root)
+        shutil.rmtree(td)
 
 
 @pytest.yield_fixture
