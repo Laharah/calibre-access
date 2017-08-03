@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/Laharah/calibre-access.svg?branch=master)](https://travis-ci.org/Laharah/calibre-access)
-#calibre-access: #
-##See who's been using your calibre server ##
+# calibre-access: #
+## See who's been using your calibre server ##
 
 
 Looks for the calibre server_access_log and parses it for downloaded files, search
@@ -12,7 +12,7 @@ downloaded.
 
 supports python 2.7, 3.3, 3.4, and 3.5; OS-X, Linux, Windows
 
-###Script Usage###
+### Script Usage ###
 
     calibre-access [options] [LOGFILE|-]
 
@@ -22,7 +22,7 @@ supports python 2.7, 3.3, 3.4, and 3.5; OS-X, Linux, Windows
         --time-filter s   number of seconds to filter out non-unique records by.
                           this filters rapid reloads/downloads. defaults to 10
 
-###Library Usage###
+### Library Usage ###
 
 ```python
 import calibre_access
@@ -72,7 +72,7 @@ See the [main function in the calibre_access](https://github.com/Laharah/calibre
 module to see the pipeline that powers the command line invocation.
 
 
-###Installation###
+### Installation ###
 
 you can either clone the repository then test/install with:
 ```bash
