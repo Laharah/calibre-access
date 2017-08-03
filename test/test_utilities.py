@@ -43,7 +43,7 @@ def test_get_records():
 def test_get_os_from_agents():
     agent_strings = [
         'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:28.0) Gecko/20100101 Firefox/28.0',
-        'non standard agent string',
+        'non standard agent string', None
     ]
     agent_strings = [{'user_agent': s} for s in agent_strings]
     parsed = list(utilities.get_os_from_agents(agent_strings))

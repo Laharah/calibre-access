@@ -79,8 +79,12 @@ def parse_generic_server_log_line(lines):
 def get_os_from_agents(records):
     pat = re.compile(r'\S+ \((.+)\).*')
     for record in records:
-        m = pat.match(record['user_agent'])
-        record['os'] = m.group(1) if m else ''
+        try:
+            m = pat.match(record['user_agent'])
+        except TypeError:
+            record['os'] = ''
+        else:
+            record['os'] = m.group(1) if m else ''
         yield record
 
 
