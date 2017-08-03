@@ -102,7 +102,8 @@ def download_coro():
     next(record_coro)
     while True:
         line = yield record
-        if not pattern_old.match(line) and not pattern_new.match(line):
+        match = pattern_old.match(line) or pattern_new.match(line)
+        if not match:
             record = None
             continue
         record = record_coro.send(line)
@@ -112,19 +113,20 @@ def download_coro():
             record['info'] = record['file']
         else:
             record['file'] = None
-            record['book_id'] = pattern_new.match(record['request']).group(1)
+            record['book_id'] = match.group(1)
             record['info'] = 'Book ID: {}'.format(record['book_id'])
 
 
 def search_coro():
     """coroutine to filter and parse search records"""
-    pattern = re.compile(r'\] "GET /browse/search\?query=(\S*)')
+    pattern_old = re.compile(r'.*\] "GET /browse/search\?query=(\S*)')
+    pattern_new = re.compile(r'.*&search=([^&]+?)&')
     record = None
     record_coro = utilities.coro_from_gen(utilities.parse_generic_server_log_line)
     next(record_coro)
     while True:
         line = yield record
-        match = pattern.search(line)
+        match = pattern_old.match(line) or pattern_new.match(line)
         if not match:
             record = None
             continue
@@ -133,15 +135,17 @@ def search_coro():
         record['query'] = match.group(1)
         record['info'] = match.group(1)
 
+
 #########
 #  Section: db_management
 #########
 
 
 def download_database():
-    print("database missing or out of date, attempting to download from "
-          "maxmind...",
-          file=sys.stderr)
+    print(
+        "database missing or out of date, attempting to download from "
+        "maxmind...",
+        file=sys.stderr)
 
     url = "http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz"
 
@@ -194,8 +198,7 @@ def locate_logs():
 
     if os.path.exists(path):
         return sorted(
-            glob.glob(os.path.join(path, 'server_access_log.txt*')),
-            reverse=True)
+            glob.glob(os.path.join(path, 'server_access_log.txt*')), reverse=True)
 
     local = glob.glob('server_access_log.txt*')
     if not local:
@@ -258,8 +261,9 @@ def main():
     try:
         ipdatabase = get_database(arguments['--force-refresh'])
     except requests.ConnectionError as e:
-        print("Could not connect to Maxmind to download new database, Exiting!",
-              file=sys.stderr)
+        print(
+            "Could not connect to Maxmind to download new database, Exiting!",
+            file=sys.stderr)
         sys.exit(1)
     time_filter_len = arguments['--time-filter']
     time_filter_len = 10 if time_filter_len is None else int(time_filter_len)

@@ -152,6 +152,17 @@ def test_search_coro():
     assert coro.send(line) is None
 
 
+def test_search_coro_with_v3():
+    coro = calibre_access.search_coro()
+    next(coro)
+    line = '192.168.0.1 port-56768 - 29/Jul/2017:09:33:53 -0700 "GET /interface-data/books-init?library_id=Calibre_Library&search=echopraxia&sort=timestamp.desc&1501346031589 HTTP/1.1" 200 -'
+    result = coro.send(line)
+    assert result['host'] == '192.168.0.1'
+    assert result['query'] == 'echopraxia'
+    assert result['type'] == 'search'
+    assert result['info'] == result['query']
+
+
 def test_download_coro():
     coro = calibre_access.download_coro()
     next(coro)
