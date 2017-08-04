@@ -198,6 +198,20 @@ def test_read_coro():
     assert result['type'] == 'read'
 
 
+def test_view_coro():
+    coro = calibre_access.view_coro()
+    next(coro)
+    line = '192.168.0.1 port-56702 - 29/Jul/2017:09:26:37 -0700 "GET /get/cover/21469/Calibre_Library HTTP/1.1" 200 459389'
+    result = coro.send(line)
+    assert result['host'] == '192.168.0.1'
+    assert result['book_id'] == '21469'
+    assert result['type'] == 'view'
+
+    line = '192.168.0.1 port-56921 - 29/Jul/2017:09:40:44 -0700 "GET /get/cover/21470/Calibre_Library?library_id=Calibre_Library&1501346444650 HTTP/1.1" 200 122618'
+    result = coro.send(line)
+    assert not result
+
+
 def test_seperate_search_download():
     search = '166.147.101.20 - - [20/Oct/2014:08:18:26] "GET /browse/search?query=dresden+files HTTP/1.1" 200 7814 "http://localhost:8080/browse/search?query=iron+druid" "Mozilla/5.0 (Linux; U; Android 4.2.2; en-us; KFAPWI Build/JDQ39) AppleWebKit/537.36 (KHTML, like Gecko) Silk/3.32 like Chrome/34.0.1847.137 Safari/537.36"'
     download = '24.1.110.218 - - [05/Dec/2014:18:54:19] "GET /get/mobi/Devil Said Bang - Richard Kadrey_16536.mobi HTTP/1.1" 200 531748 "http://localhost:8080/browse/search?query=sandman+slim" "Mozilla/5.0 (Linux; U; Android 4.4.3; en-us; KFAPWI Build/KTU84M) AppleWebKit/537.36 (KHTML, like Gecko) Silk/3.40 like Chrome/37.0.2026.117 Safari/537.36"'
