@@ -6,6 +6,7 @@ Usage: calibre-access [options] [LOGFILE|-]
 
     -d, --downloads   Parse download records (defaut record if none specified)
     -s, --searches    Parse search records
+    -r, --reads       Parse read book records
     -b, --bare        do not show total records or total unique ip's
     --time-filter s   number of seconds to filter out non-unique records by.
                       this filters rapid reloads/downloads. defaults to 10
@@ -96,7 +97,6 @@ def all_records(log_files=None):
 def download_coro():
     """ coroutine to filter and parse download records"""
     pattern_old = re.compile(r'.*(\.mobi|\.epub|\.azw|\.azw3|\.pdf)')
-    # view: pattern_new = re.compile(r'.*/book-manifest/(\d+)/(EPUB|MOBI|PDF|AZW|AZW3)')
     pattern_new = re.compile(r'.* /get/(EPUB|MOBI|PDF|AZW|AZW3)/(\d+)')
     record = None
     record_coro = utilities.coro_from_gen(utilities.parse_generic_server_log_line)
@@ -136,6 +136,22 @@ def search_coro():
         record['query'] = match.group(1)
         record['info'] = match.group(1)
 
+def read_coro():
+    """coroutine to filter and parse reading records"""
+    pattern = re.compile(r'.*/book-manifest/(\d+)/(EPUB|MOBI|PDF|AZW|AZW3)')
+    record = None
+    record_coro = utilities.coro_from_gen(utilities.parse_generic_server_log_line)
+    next(record_coro)
+    while True:
+        line = yield record
+        match = pattern.match(line)
+        if not match:
+            record = None
+            continue
+        record = record_coro.send(line)
+        record['type'] = 'read'
+        record['book_id'] = match.group(1)
+        record['info'] = 'Book ID: {}'.format(record['book_id'])
 
 #########
 #  Section: db_management
@@ -253,6 +269,8 @@ def main():
         coros.append(search_coro)
     if arguments['--downloads']:
         coros.append(download_coro)
+    if arguments['--reads']:
+        coros.append(read_coro)
     if not coros:
         coros = [download_coro]
 
