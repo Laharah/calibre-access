@@ -179,11 +179,11 @@ def test_download_coro():
 def test_download_coro_with_v3():
     coro = calibre_access.download_coro()
     next(coro)
-    line = '192.168.0.1 port-56919 - 29/Jul/2017:09:40:44 -0700 "GET /book-manifest/21470/EPUB?library_id=Calibre_Library&1501346444609 HTTP/1.1" 200 -'
+    line = '192.168.0.1 port-56702 - 29/Jul/2017:09:26:52 -0700 "GET /get/MOBI/21468/Calibre_Library HTTP/1.1" 200 4252028'
     result = coro.send(line)
     assert result['host'] == '192.168.0.1'
     assert result['file'] == None
-    assert result['book_id'] == '21470'
+    assert result['book_id'] == '21468'
     assert result['type'] == 'download'
     # assert result['info'] =
 

@@ -96,7 +96,8 @@ def all_records(log_files=None):
 def download_coro():
     """ coroutine to filter and parse download records"""
     pattern_old = re.compile(r'.*(\.mobi|\.epub|\.azw|\.azw3|\.pdf)')
-    pattern_new = re.compile(r'.*/book-manifest/(\d+)/(EPUB|MOBI|PDF|AZW|AZW3)')
+    # view: pattern_new = re.compile(r'.*/book-manifest/(\d+)/(EPUB|MOBI|PDF|AZW|AZW3)')
+    pattern_new = re.compile(r'.* /get/(EPUB|MOBI|PDF|AZW|AZW3)/(\d+)')
     record = None
     record_coro = utilities.coro_from_gen(utilities.parse_generic_server_log_line)
     next(record_coro)
@@ -113,7 +114,7 @@ def download_coro():
             record['info'] = record['file']
         else:
             record['file'] = None
-            record['book_id'] = match.group(1)
+            record['book_id'] = match.group(2)
             record['info'] = 'Book ID: {}'.format(record['book_id'])
 
 
