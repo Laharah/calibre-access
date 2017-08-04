@@ -8,6 +8,7 @@ Usage: calibre-access [options] [LOGFILE|-]
     -s, --searches    Parse search records
     -r, --reads       Parse read book records
     -v, --views       Parse view book detail records
+    -a, --all         equivalent to -dsrv
     -b, --bare        do not show total records or total unique ip's
     --time-filter s   number of seconds to filter out non-unique records by.
                       this filters rapid reloads/downloads. defaults to 10
@@ -298,6 +299,8 @@ def main():
         if arguments[arg]:
             coros.append(coro)
 
+    if arguments['--all']:
+        coros = list(arg_to_coro.values())
     if not coros:
         coros = [download_coro]
 
