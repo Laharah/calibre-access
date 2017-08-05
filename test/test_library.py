@@ -58,3 +58,8 @@ def test_bad_index_raises_key_error(mock_db_file):
     with lb.BookLibrary(mock_db_file) as bl:
         with pytest.raises(KeyError):
             bl['10'] == None
+
+
+def test_no_set_index(mock_db_file):
+    with lb.BookLibrary(mock_db_file) as bl, pytest.raises(TypeError):
+        bl['1'] = "changed title"
