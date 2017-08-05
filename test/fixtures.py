@@ -42,10 +42,13 @@ def mock_lib_dir():
     b1 = (a1 / "Book One (123)")
     b2 = (a1 / "Book Two (23456)")
     b3 = (a2 / "Book Three (345)")
-    for d in (a1, a2, b1, b2, b3):
+    b4 = (a2 / "This is a Really Long Book Title That Wi (4567)")
+    for d in (a1, a2, b1, b2, b3, b4):
         d.mkdir()
     b1m = (b1 / "Book One - Author One.mobi").write_text("mobi book 1")
     b1e = (b1 / "Book One - Author One.epub").write_text("epub book 1")
+    meta_sample = """l1\nl2\nl3\nl4\nl5\n          <dc:title>This is a Really Long Book Title That Will Be Trunkated</dc:title>\nmore\nlines\nhere"""
+    (b4 / 'metadata.opf').write_text(meta_sample)
     try:
         yield root
     finally:

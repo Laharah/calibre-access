@@ -21,8 +21,17 @@ def scan_lib(libpath):
             except AttributeError:
                 continue
 
+            if not len(title)<34:
+                title = get_sixth_line(folder/"metadata.opf").strip()[10:-11]
+
             books[id] = title
     return books
+
+def get_sixth_line(path):
+    with open(str(path), 'r') as f:
+        for _ in range(5):
+            f.readline()
+        return f.readline()
 
 
 def write_cache(lib_ids, fout):

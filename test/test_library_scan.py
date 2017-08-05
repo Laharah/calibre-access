@@ -3,12 +3,17 @@ import calibre_access.library_scan as ls
 import sys
 from fixtures import mock_lib_dir
 
-if sys.version_info > (3,4):
+if sys.version_info > (3, 4):
     from pathlib import Path
 else:
     from pathlib2 import Path
 
-BOOK_IDS = {'123': 'Book One', '23456': 'Book Two', '345': 'Book Three'}
+BOOK_IDS = {
+    '123': 'Book One',
+    '23456': 'Book Two',
+    '345': 'Book Three',
+    '4567': 'This is a Really Long Book Title That Will Be Trunkated'
+}
 
 
 def test_scan_lib(mock_lib_dir):
