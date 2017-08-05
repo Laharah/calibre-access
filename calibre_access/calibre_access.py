@@ -10,8 +10,9 @@ Usage: calibre-access [options] [LOGFILE|-]
     -v, --views       Parse view book detail records
     -a, --all         equivalent to -dsrv
     -b, --bare        do not show total records or total unique ip's
+    --set-library=PTH use library to resolve book ids, saved between runs
     --time-filter s   number of seconds to filter out non-unique records by.
-                      this filters rapid reloads/downloads. defaults to 10
+                      this filters rapid reloads/downloads. defaults to 10,
     --force-refresh   Force a refresh of the GeoLite database
 
 
@@ -21,6 +22,7 @@ Licensed under the MIT license (see LICENSE)
 
 __author__ = 'laharah'
 
+import json
 import pygeoip
 import re
 import gzip
@@ -37,6 +39,7 @@ from . import utilities
 
 APPNAME = 'calibre-access'
 USER_DIR = appdirs.user_data_dir(APPNAME)
+USER_CONFIG_DIR = appdirs.user_config_dir(APPNAME)
 
 
 def print_record(record):
@@ -270,8 +273,17 @@ def get_database(force_refresh=False):
 
 def main():
     import docopt
+    from collections import ChainMap
 
     arguments = docopt.docopt(__doc__)
+
+    config_file = os.path.join(USER_CONFIG_DIR, 'config.json')
+    if os.path.exists(config_file):
+        with open(config_file, 'r') as fin:
+            config = json.load(fin)
+    else:
+        config = {'library_path':  None}
+
     log_file = arguments["LOGFILE"]
     if not log_file:
         try:
@@ -322,6 +334,16 @@ def main():
     geo_located = utilities.get_locations(time_filtered, ipdatabase)
     records = utilities.get_os_from_agents(geo_located)
 
+    if arguments['--set-library'] is None and config['library_path']:
+        arguments['--set-library'] = config['library_path']
+    if arguments['--set-library'] and os.path.exists(arguments['--set-library']):
+        path = os.path.abspath(arguments['--set-library'])
+        arguments['--set-library'] = path
+        if not path.endswith('metadata.db'):
+            path = os.path.join(path, 'metadata.db')
+        records = utilities.resolve_book_ids(records, path)
+
+
     total_records = 0
     ips = set()
 
@@ -333,5 +355,13 @@ def main():
     if not arguments['--bare']:
         print("Total Records: {}".format(total_records))
         print("Unique Ips: {}".format(len(ips)))
+
+    if arguments['--set-library']:
+        config['library_path'] = arguments['--set-library']
+        with open(config_file, 'w') as fout:
+            json.dump(config, fout)
+
+    # from pprint import pprint
+    # pprint(arguments)
 
     sys.exit(0)
