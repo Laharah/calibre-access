@@ -281,7 +281,7 @@ def main():
         with open(config_file, 'r') as fin:
             config = json.load(fin)
     else:
-        config = {'library_path':  None}
+        config = {'library_path': None}
 
     log_file = arguments["LOGFILE"]
     if not log_file:
@@ -342,7 +342,6 @@ def main():
             path = os.path.join(path, 'metadata.db')
         records = utilities.resolve_book_ids(records, path)
 
-
     total_records = 0
     ips = set()
 
@@ -357,10 +356,9 @@ def main():
 
     if arguments['--set-library']:
         config['library_path'] = arguments['--set-library']
+        if not os.path.exists(USER_CONFIG_DIR):
+            os.makedirs(USER_CONFIG_DIR)
         with open(config_file, 'w') as fout:
             json.dump(config, fout)
-
-    # from pprint import pprint
-    # pprint(arguments)
 
     sys.exit(0)
