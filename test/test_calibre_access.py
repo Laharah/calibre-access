@@ -144,7 +144,7 @@ def test_search_coro():
     line = '166.147.101.20 - - [20/Oct/2014:08:18:26] "GET /browse/search?query=dresden+files HTTP/1.1" 200 7814 "http://localhost:8080/browse/search?query=iron+druid" "Mozilla/5.0 (Linux; U; Android 4.2.2; en-us; KFAPWI Build/JDQ39) AppleWebKit/537.36 (KHTML, like Gecko) Silk/3.32 like Chrome/34.0.1847.137 Safari/537.36"'
     result = coro.send(line)
     assert result['host'] == '166.147.101.20'
-    assert result['query'] == 'dresden+files'
+    assert result['query'] == 'dresden files'
     assert result['type'] == 'search'
     assert result['info'] == result['query']
 
@@ -155,10 +155,10 @@ def test_search_coro():
 def test_search_coro_with_v3():
     coro = calibre_access.search_coro()
     next(coro)
-    line = '192.168.0.1 port-56768 - 29/Jul/2017:09:33:53 -0700 "GET /interface-data/books-init?library_id=Calibre_Library&search=echopraxia&sort=timestamp.desc&1501346031589 HTTP/1.1" 200 -'
+    line = '192.168.0.1 port-56768 - 29/Jul/2017:09:33:53 -0700 "GET /interface-data/books-init?library_id=Calibre_Library&search=authors:%22%3DTom%20Babin%22&sort=timestamp.desc&1501346031589 HTTP/1.1" 200 -'
     result = coro.send(line)
     assert result['host'] == '192.168.0.1'
-    assert result['query'] == 'echopraxia'
+    assert result['query'] == 'authors:"=Tom Babin"'
     assert result['type'] == 'search'
     assert result['info'] == result['query']
 

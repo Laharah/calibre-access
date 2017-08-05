@@ -32,6 +32,7 @@ import glob
 import time
 import sys
 import warnings
+import urllib
 
 import appdirs
 import requests
@@ -127,6 +128,10 @@ def search_coro():
     """coroutine to filter and parse search records"""
     pattern_old = re.compile(r'.*\] "GET /browse/search\?query=(\S*)')
     pattern_new = re.compile(r'.*&search=([^&]+?)&')
+    if sys.version_info.major == 2:
+        unquote = urllib.unquote_plus
+    else:
+        unquote = urllib.parse.unquote_plus
     record = None
     record_coro = utilities.coro_from_gen(utilities.parse_generic_server_log_line)
     next(record_coro)
@@ -138,8 +143,8 @@ def search_coro():
             continue
         record = record_coro.send(line)
         record['type'] = 'search'
-        record['query'] = match.group(1)
-        record['info'] = match.group(1)
+        record['query'] = unquote(match.group(1))
+        record['info'] = record['query']
 
 
 def read_coro():
