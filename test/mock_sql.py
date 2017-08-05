@@ -8,6 +8,25 @@ CREATE TABLE authors ( id   INTEGER PRIMARY KEY,
                              );
 INSERT INTO "authors" VALUES(1,'Author One','One, Author','');
 INSERT INTO "authors" VALUES(2,'Author Two','Two, Author','');
+INSERT INTO "authors" VALUES(5,'David Boop','Boop, David','');
+INSERT INTO "authors" VALUES(6,'Larry Correia','Correia, Larry','');
+INSERT INTO "authors" VALUES(7,'Maurice Broaddus','Broaddus, Maurice','');
+INSERT INTO "authors" VALUES(8,'Sarah A. Hoyt','Hoyt, Sarah A.','');
+INSERT INTO "authors" VALUES(9,'Alan Dean Foster','Foster, Alan Dean','');
+INSERT INTO "authors" VALUES(10,'David Lee Summers','Summers, David Lee','');
+INSERT INTO "authors" VALUES(11,'Kevin J. Anderson','Anderson, Kevin J.','');
+INSERT INTO "authors" VALUES(12,'Naomi Brett Rourke','Rourke, Naomi Brett','');
+INSERT INTO "authors" VALUES(13,'Julie Campbell','Campbell, Julie','');
+INSERT INTO "authors" VALUES(14,'Peter J. Wacks','Wacks, Peter J.','');
+INSERT INTO "authors" VALUES(15,'Jim Butcher','Butcher, Jim','');
+INSERT INTO "authors" VALUES(16,'Jody Lynn Nye','Nye, Jody Lynn','');
+INSERT INTO "authors" VALUES(17,'Sam Knight','Knight, Sam','');
+INSERT INTO "authors" VALUES(18,'Robert E. Vardeman','Vardeman, Robert E.','');
+INSERT INTO "authors" VALUES(19,'Phil Foglio','Foglio, Phil','');
+INSERT INTO "authors" VALUES(20,'Nicole Kurtz','Kurtz, Nicole','');
+INSERT INTO "authors" VALUES(21,'Michael A. Stackpole','Stackpole, Michael A.','');
+INSERT INTO "authors" VALUES(22,'Bryan Thomas Schmidt','Schmidt, Bryan Thomas','');
+INSERT INTO "authors" VALUES(23,'Ken Scholes','Scholes, Ken','');
 CREATE TABLE books ( id      INTEGER PRIMARY KEY AUTOINCREMENT,
                              title     TEXT NOT NULL DEFAULT 'Unknown' COLLATE NOCASE,
                              sort      TEXT COLLATE NOCASE,
@@ -26,6 +45,7 @@ INSERT INTO "books" VALUES(1,'Book One','Book One','2017-08-05 01:13:54.948371+0
 INSERT INTO "books" VALUES(2,'Book Two','Book Two','2017-08-05 01:13:54.966232+00:00','0101-01-01 00:00:00+00:00',2.0,'One, Author','','','Author One/Book Two (2)',1,'b3d6c694-c493-4a33-bb14-3a7c39962116',0,'2017-08-05 01:14:19.596566+00:00');
 INSERT INTO "books" VALUES(3,'Book Three','Book Three','2017-08-05 01:14:51.294581+00:00','0101-01-01 00:00:00+00:00',1.0,'Two, Author','','','Author Two/Book Three (3)',1,'21de5a04-1f15-40cb-bd8e-60885f8de85a',0,'2017-08-05 01:14:51.306863+00:00');
 INSERT INTO "books" VALUES(4,'This is a Very Long Book Name That Will Be Truncated','This is a Very Long Book Name That Will Be Truncated','2017-08-05 01:40:43.351851+00:00','0101-01-01 00:00:00+00:00',1.0,'Two, Author','','','Author Two/This is a Very Long Book Name That Will Be Truncated (4)',1,'f6f9e9a5-39cf-484a-acab-750614f7f596',0,'2017-08-05 01:40:43.366170+00:00');
+INSERT INTO "books" VALUES(5,'Straight Outta Tombstone (The Dresden Files - a Fistful of Warlocks)','Straight Outta Tombstone (The Dresden Files - a Fistful of Warlocks)','2017-08-05 17:15:11.197666+00:00','2017-07-04 07:00:00+00:00',1.0,'Boop, David & Correia, Larry & Broaddus, Maurice & Hoyt, Sarah A. & Foster, Alan Dean & Summers, David Lee & Anderson, Kevin J. & Rourke, Naomi Brett & Campbell, Julie & Wacks, Peter J. & Butcher, Jim & Nye, Jody Lynn & Knight, Sam & Vardeman, Robert E. & Foglio, Phil & Kurtz, Nicole & Stackpole, Michael A. & Schmidt, Bryan Thomas & Scholes, Ken','','','David Boop/Straight Outta Tombstone (The Dresden Files - a Fistful of Warlocks) (5)',1,'1688ad2b-644e-4d15-bc14-003e19e34ebf',1,'2017-08-05 17:18:47.940686+00:00');
 CREATE TABLE books_authors_link ( id INTEGER PRIMARY KEY,
                                           book INTEGER NOT NULL,
                                           author INTEGER NOT NULL,
@@ -35,12 +55,32 @@ INSERT INTO "books_authors_link" VALUES(1,1,1);
 INSERT INTO "books_authors_link" VALUES(2,2,1);
 INSERT INTO "books_authors_link" VALUES(3,3,2);
 INSERT INTO "books_authors_link" VALUES(4,4,2);
+INSERT INTO "books_authors_link" VALUES(5,5,5);
+INSERT INTO "books_authors_link" VALUES(6,5,6);
+INSERT INTO "books_authors_link" VALUES(7,5,7);
+INSERT INTO "books_authors_link" VALUES(8,5,8);
+INSERT INTO "books_authors_link" VALUES(9,5,9);
+INSERT INTO "books_authors_link" VALUES(10,5,10);
+INSERT INTO "books_authors_link" VALUES(11,5,11);
+INSERT INTO "books_authors_link" VALUES(12,5,12);
+INSERT INTO "books_authors_link" VALUES(13,5,13);
+INSERT INTO "books_authors_link" VALUES(14,5,14);
+INSERT INTO "books_authors_link" VALUES(15,5,15);
+INSERT INTO "books_authors_link" VALUES(16,5,16);
+INSERT INTO "books_authors_link" VALUES(17,5,17);
+INSERT INTO "books_authors_link" VALUES(18,5,18);
+INSERT INTO "books_authors_link" VALUES(19,5,19);
+INSERT INTO "books_authors_link" VALUES(20,5,20);
+INSERT INTO "books_authors_link" VALUES(21,5,21);
+INSERT INTO "books_authors_link" VALUES(22,5,22);
+INSERT INTO "books_authors_link" VALUES(23,5,23);
 CREATE TABLE books_languages_link ( id INTEGER PRIMARY KEY,
                                             book INTEGER NOT NULL,
                                             lang_code INTEGER NOT NULL,
                                             item_order INTEGER NOT NULL DEFAULT 0,
                                             UNIQUE(book, lang_code)
         );
+INSERT INTO "books_languages_link" VALUES(1,5,1,0);
 CREATE TABLE books_plugin_data(id INTEGER PRIMARY KEY,
                                      book INTEGER NOT NULL,
                                      name TEXT NOT NULL,
@@ -51,11 +91,13 @@ CREATE TABLE books_publishers_link ( id INTEGER PRIMARY KEY,
                                           publisher INTEGER NOT NULL,
                                           UNIQUE(book)
                                         );
+INSERT INTO "books_publishers_link" VALUES(1,5,1);
 CREATE TABLE books_ratings_link ( id INTEGER PRIMARY KEY,
                                           book INTEGER NOT NULL,
                                           rating INTEGER NOT NULL,
                                           UNIQUE(book, rating)
                                         );
+INSERT INTO "books_ratings_link" VALUES(1,5,1);
 CREATE TABLE books_series_link ( id INTEGER PRIMARY KEY,
                                           book INTEGER NOT NULL,
                                           series INTEGER NOT NULL,
@@ -68,11 +110,39 @@ CREATE TABLE books_tags_link ( id INTEGER PRIMARY KEY,
                                           tag INTEGER NOT NULL,
                                           UNIQUE(book, tag)
                                         );
+INSERT INTO "books_tags_link" VALUES(1,5,1);
+INSERT INTO "books_tags_link" VALUES(2,5,2);
+INSERT INTO "books_tags_link" VALUES(3,5,3);
+INSERT INTO "books_tags_link" VALUES(4,5,4);
+INSERT INTO "books_tags_link" VALUES(5,5,5);
 CREATE TABLE comments ( id INTEGER PRIMARY KEY,
                               book INTEGER NOT NULL,
                               text TEXT NOT NULL COLLATE NOCASE,
                               UNIQUE(book)
                             );
+INSERT INTO "comments" VALUES(1,5,'<p><strong>Tales of the Weird Wild West.</strong>Top authors take on the classic western, with a weird twist. Includes new stories by Larry Correia and Jim Butcher! <br>
+Come visit the Old West, the land where gang initiations, ride-by shootings and territory disputes got their start. But these tales aren''t the ones your grandpappy spun around a campfire, unless he spoke of soul-sucking ghosts, steam-powered demons, and wayward aliens. <br>
+Here then are seventeen stories that breathe new life in the Old West. Among them: Larry Correia explores the roots of his best-selling <em>Monster Hunter International</em> series in "Bubba Shackleford''s Professional Monster Killers." Jim Butcher reveals the origin of one of the <em>Dresden Files''</em> most popular characters in "A Fistful of Warlocks." And Kevin J. Anderson''s Dan Shamble, Zombie P.I., finds himself in a showdown in "High Midnight." Plus stories from Alan Dean Foster, Sarah A. Hoyt, Jody Lynn Nye, Michael A. Stackpole, and many more. <br>
+This is a <em>new</em> Old West and you ll be lucky to get outta town alive! <br>
+Contributors: <br>
+David Boop<br>
+Larry Correia<br>
+Jody Lynn Nye<br>
+Sam Knight<br>
+Robert E. Vardeman<br>
+Phil Foglio<br>
+Nicole Kurtz<br>
+Michael A. Stackpole<br>
+Bryan Thomas Schmidt &amp; Ken Scholes<br>
+Maurice Broaddus<br>
+Sarah A. Hoyt<br>
+Alan Dean Foster<br>
+David Lee Summers<br>
+Kevin J. Anderson<br>
+Naomi Brett Rourke<br>
+Julie Campbell<br>
+Peter J. Wacks<br>
+Jim Butcher"</p>');
 CREATE TABLE conversion_options ( id INTEGER PRIMARY KEY,
                                           format TEXT NOT NULL COLLATE NOCASE,
                                           book INTEGER,
@@ -109,10 +179,12 @@ CREATE TABLE identifiers  ( id     INTEGER PRIMARY KEY,
                                     val    TEXT NOT NULL COLLATE NOCASE,
                                     UNIQUE(book, type)
         );
+INSERT INTO "identifiers" VALUES(1,5,'goodreads','32919692');
 CREATE TABLE languages    ( id        INTEGER PRIMARY KEY,
                                     lang_code TEXT NOT NULL COLLATE NOCASE,
                                     UNIQUE(lang_code)
         );
+INSERT INTO "languages" VALUES(1,'eng');
 CREATE TABLE library_id ( id   INTEGER PRIMARY KEY,
                                   uuid TEXT NOT NULL,
                                   UNIQUE(uuid)
@@ -130,10 +202,12 @@ CREATE TABLE publishers ( id   INTEGER PRIMARY KEY,
                                   sort TEXT COLLATE NOCASE,
                                   UNIQUE(name)
                              );
+INSERT INTO "publishers" VALUES(1,'Baen',NULL);
 CREATE TABLE ratings ( id   INTEGER PRIMARY KEY,
                                rating INTEGER CHECK(rating > -1 AND rating < 11),
                                UNIQUE (rating)
                              );
+INSERT INTO "ratings" VALUES(1,8);
 CREATE TABLE series ( id   INTEGER PRIMARY KEY,
                               name TEXT NOT NULL COLLATE NOCASE,
                               sort TEXT COLLATE NOCASE,
@@ -144,6 +218,11 @@ CREATE TABLE tags ( id   INTEGER PRIMARY KEY,
                             name TEXT NOT NULL COLLATE NOCASE,
                             UNIQUE (name)
                              );
+INSERT INTO "tags" VALUES(1,'Urban Fantasy');
+INSERT INTO "tags" VALUES(2,'Fantasy');
+INSERT INTO "tags" VALUES(3,'Horror');
+INSERT INTO "tags" VALUES(4,'Anthologies');
+INSERT INTO "tags" VALUES(5,'Vampires');
 CREATE TABLE last_read_positions ( id INTEGER PRIMARY KEY,
 	book INTEGER NOT NULL,
 	format TEXT NOT NULL COLLATE NOCASE,
@@ -155,7 +234,7 @@ CREATE TABLE last_read_positions ( id INTEGER PRIMARY KEY,
 	UNIQUE(user, device, book, format)
 );
 DELETE FROM sqlite_sequence;
-INSERT INTO "sqlite_sequence" VALUES('books',4);
+INSERT INTO "sqlite_sequence" VALUES('books',5);
 CREATE INDEX authors_idx ON books (author_sort COLLATE NOCASE);
 CREATE INDEX books_authors_link_aidx ON books_authors_link (author);
 CREATE INDEX books_authors_link_bidx ON books_authors_link (book);
