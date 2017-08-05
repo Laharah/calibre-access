@@ -4,6 +4,7 @@ __author__ = 'laharah'
 import pytest
 import shutil
 import sys
+import sqlite3
 import os
 import tempfile
 import httpretty
@@ -14,6 +15,7 @@ from io import BytesIO
 
 import pytest
 
+from mock_sql import SQL
 import calibre_access.calibre_access as calibre_access
 
 
@@ -121,3 +123,18 @@ def mock_platform(request):
     platform.system = mock_platform
     yield
     platform.system = old
+
+
+@pytest.yield_fixture(scope='module')
+def mock_db_file():
+    td = tempfile.mkdtemp()
+    mock_db = os.path.join(td, 'metadata.db')
+    con = sqlite3.connect(mock_db)
+    cur = con.cursor()
+    cur.executescript(SQL)
+    cur.close()
+    con.close()
+    try:
+        yield mock_db
+    finally:
+        shutil.rmtree(td)

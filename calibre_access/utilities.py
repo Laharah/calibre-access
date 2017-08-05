@@ -3,6 +3,7 @@ from __future__ import print_function, unicode_literals
 import re
 import gzip
 import datetime
+from .library import BookLibrary
 
 
 def get_lines_from_logs(logs):
@@ -146,3 +147,12 @@ def time_filter(records, seconds):
                 yield current
 
         previous = current
+
+def resolve_book_ids(records, library_db):
+    with BookLibrary(library_db) as lib:
+        for record in records:
+            try:
+                record['info'] = lib[record['book_id']]
+            except KeyError:
+                pass
+            yield record

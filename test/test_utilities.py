@@ -5,7 +5,7 @@ import re
 import datetime
 import mock
 import copy
-from fixtures import mock_access_logs_local
+from fixtures import mock_access_logs_local, mock_db_file
 
 
 def test_get_lines_from_logs(mock_access_logs_local):
@@ -148,3 +148,46 @@ def test_time_filter():
     records = [record1, record2, record3, record4]
     assert len(list(utilities.time_filter(records, 10))) == 4
     assert len(list(utilities.time_filter(records, 25))) == 3
+
+def test_resolve_book_ids(mock_db_file):
+    record = {
+        'host':       '192.168.0.1',
+        'identity':   'port-56702',
+        'user':       '-',
+        'datetime':   datetime.datetime(2017, 7, 29, 9, 26, 37),
+        'timezone':   '-0700 ',
+        'method':     'GET',
+        'request':    '/get/cover/21469/Calibre_Library',
+        'protocol':   'HTTP/1.1',
+        'status':     200,
+        'bytes':      459389,
+        'referer':    None,
+        'user_agent': None,
+        'file':       None,
+        'book_id':    '1',
+        'info': 'Book ID: 1'
+    }  # yapf: disable
+
+    resolve = utilities.resolve_book_ids([record], mock_db_file)
+    assert next(resolve)['info'] == 'Book One'
+
+def test_resolve_id_w_no_id(mock_db_file):
+    record = {
+        'host':       '192.168.0.1',
+        'identity':   'port-56702',
+        'user':       '-',
+        'datetime':   datetime.datetime(2017, 7, 29, 9, 26, 37),
+        'timezone':   '-0700 ',
+        'method':     'GET',
+        'request':    '/get/cover/21469/Calibre_Library',
+        'protocol':   'HTTP/1.1',
+        'status':     200,
+        'bytes':      459389,
+        'referer':    None,
+        'user_agent': None,
+        'file':       None,
+        'info': 'Book ID: 1'
+    }  # yapf: disable
+
+    resolve = utilities.resolve_book_ids([record], mock_db_file)
+    assert next(resolve) == record

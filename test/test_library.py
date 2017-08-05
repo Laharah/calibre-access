@@ -1,28 +1,13 @@
-import sqlite3
 import pytest
 import os
 import tempfile
 import shutil
 import hashlib
 import sys
+import sqlite3
 
-from mock_sql import SQL
+from fixtures import mock_db_file
 import calibre_access.library as lb
-
-
-@pytest.yield_fixture(scope='module')
-def mock_db_file():
-    td = tempfile.mkdtemp()
-    mock_db = os.path.join(td, 'metadata.db')
-    con = sqlite3.connect(mock_db)
-    cur = con.cursor()
-    cur.executescript(SQL)
-    cur.close()
-    con.close()
-    try:
-        yield mock_db
-    finally:
-        shutil.rmtree(td)
 
 
 def test_book_library_instantiation(mock_db_file):
