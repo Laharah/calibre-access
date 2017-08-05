@@ -273,7 +273,6 @@ def get_database(force_refresh=False):
 
 def main():
     import docopt
-    from collections import ChainMap
 
     arguments = docopt.docopt(__doc__)
 

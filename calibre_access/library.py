@@ -1,4 +1,5 @@
 import sqlite3
+import re
 
 
 class BookLibrary(object):
@@ -24,8 +25,10 @@ class BookLibrary(object):
 
     def __getitem__(self, index):
         assert self.con is not None and self.cur is not None
-        self.cur.execute('SELECT title FROM books WHERE id = ?', (index, ))
+        self.cur.execute('SELECT title, path FROM books WHERE id = ?', (index, ))
+        res = self.cur.fetchone()
         try:
-            return self.cur.fetchone()[0]
+            title, author = res[0], re.split(r'[/\\]', res[1])[0]
+            return '{} - {}'.format(title, author)
         except TypeError:
             raise KeyError(str(index))

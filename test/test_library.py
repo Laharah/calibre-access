@@ -16,9 +16,9 @@ def test_book_library_instantiation(mock_db_file):
 
 def test_book_library_lookup(mock_db_file):
     with lb.BookLibrary(mock_db_file) as bl:
-        assert bl['1'] == "Book One"
-        assert bl['2'] == "Book Two"
-        assert bl['4'] == "This is a Very Long Book Name That Will Be Truncated"
+        assert bl['1'] == "Book One - Author One"
+        assert bl['2'] == "Book Two - Author One"
+        assert bl['4'] == "This is a Very Long Book Name That Will Be Truncated - Author Two"
 
 
 def test_book_library_lookup_must_be_context(mock_db_file):

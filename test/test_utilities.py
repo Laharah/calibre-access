@@ -169,7 +169,7 @@ def test_resolve_book_ids(mock_db_file):
     }  # yapf: disable
 
     resolve = utilities.resolve_book_ids([record], mock_db_file)
-    assert next(resolve)['info'] == 'Book One'
+    assert next(resolve)['info'] == 'Book One - Author One'
 
 def test_resolve_id_w_no_id(mock_db_file):
     record = {
