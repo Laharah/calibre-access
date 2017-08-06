@@ -334,8 +334,7 @@ def main():
     time_filter_len = 10 if time_filter_len is None else int(time_filter_len)
 
     base_records = utilities.get_records(log_file, coros)
-    time_filtered = utilities.time_filter(base_records, time_filter_len)
-    geo_located = utilities.get_locations(time_filtered, ipdatabase)
+    geo_located = utilities.get_locations(base_records, ipdatabase)
     records = utilities.get_os_from_agents(geo_located)
 
     if arguments['--set-library'] is None and config['library_path']:
@@ -346,6 +345,8 @@ def main():
         if not path.endswith('metadata.db'):
             path = os.path.join(path, 'metadata.db')
         records = utilities.resolve_book_ids(records, path)
+
+    records = utilities.time_filter(records, time_filter_len)  # time filter must be last
 
     total_records = 0
     ips = set()
