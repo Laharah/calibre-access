@@ -103,13 +103,13 @@ def all_records(log_files=None):
 def download_coro():
     """ coroutine to filter and parse download records"""
     pattern_old = re.compile(r'.*(\.mobi|\.epub|\.azw|\.azw3|\.pdf)')
-    pattern_new = re.compile(r'.* /get/(EPUB|MOBI|PDF|AZW|AZW3)/(\d+)')
+    pattern_new = re.compile(r'.* (?:/legacy)?/get/(EPUB|MOBI|PDF|AZW|AZW3)/(\d+)')
     record = None
     record_coro = utilities.coro_from_gen(utilities.parse_generic_server_log_line)
     next(record_coro)
     while True:
         line = yield record
-        match = pattern_old.match(line) or pattern_new.match(line)
+        match = pattern_new.match(line) or pattern_old.match(line)
         if not match:
             record = None
             continue

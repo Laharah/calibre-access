@@ -185,7 +185,17 @@ def test_download_coro_with_v3():
     assert result['file'] == None
     assert result['book_id'] == '21468'
     assert result['type'] == 'download'
-    # assert result['info'] =
+
+def test_download_coro_v3_legacy():
+    coro = calibre_access.download_coro()
+    next(coro)
+    line = '52.207.254.44 port-49702 - 19/Aug/2017:15:10:28 -0700 "GET /legacy/get/MOBI/21474/Calibre_Library/Meddling%20Kids%20-%20Edgar%20Cantero_21474.mobi HTTP/1.1" 200 2747777'
+    result = coro.send(line)
+    assert result['host'] == '52.207.254.44'
+    assert result['file'] == None
+    assert result['book_id'] == '21474'
+    assert result['type'] == 'download'
+
 
 
 def test_read_coro():
