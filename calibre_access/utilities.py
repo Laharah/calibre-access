@@ -46,11 +46,14 @@ def get_records(lines, coroutines):
 
 
 def parse_generic_server_log_line(lines):
-    logpats = re.compile(r'(\S+) (\S+) (\S+) \[?(.*?)\]? (-\d+ )?"(.*?)" (\S+) (\S+) ?(.*)?')
+    logpats = re.compile(
+        r'(\S+) (\S+) (\S+) \[?(.*?)\]? (-\d+ )?"(.*?)" (\S+) (\S+) ?(.*)?')
     request_pat = re.compile(r'(\S+) (.+) (\S+)')
     #request_line = 'method' 'request' 'protocol'
-    fields = ['host', 'identity', 'user', 'datetime', 'timezone', 'request_line',
-              'status', 'bytes', 'ref/uagent']
+    fields = [
+        'host', 'identity', 'user', 'datetime', 'timezone', 'request_line', 'status',
+        'bytes', 'ref/uagent'
+    ]
     for line in lines:
         data = [g for g in logpats.match(line).groups()]
         d = dict(zip(fields, data))
@@ -147,6 +150,7 @@ def time_filter(records, seconds):
                 yield current
 
         previous = current
+
 
 def resolve_book_ids(records, library_db):
     with BookLibrary(library_db) as lib:
