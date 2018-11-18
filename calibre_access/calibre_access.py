@@ -101,7 +101,7 @@ def all_records(log_files=None):
 
 
 def download_coro():
-    """ coroutine to filter and parse download records"""
+    """coroutine to filter and parse download records"""
     pattern_old = re.compile(r'.*(\.mobi|\.epub|\.azw|\.azw3|\.pdf)')
     pattern_new = re.compile(r'.* (?:/legacy)?/get/(EPUB|MOBI|PDF|AZW|AZW3)/(\d+)')
     record = None
