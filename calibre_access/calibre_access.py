@@ -68,8 +68,7 @@ def calibre_downloads(log_files=None):
 
     :param log_files: The calibre server_access_log to use. Attempts to locate the log
     if none supplied
-    :return: a generator of parsed log lines regarding file downloads
-    """
+    :return: a generator of parsed log lines regarding file downloads """
     if not log_files:
         log_files = locate_logs()
     lines = utilities.get_lines_from_logs(log_files)
@@ -325,7 +324,7 @@ def main():
 
     try:
         ipdatabase = get_database(arguments['--force-refresh'])
-    except requests.ConnectionError as e:
+    except requests.ConnectionError:
         print(
             "Could not connect to Maxmind to download new database, Exiting!",
             file=sys.stderr)

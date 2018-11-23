@@ -127,13 +127,10 @@ class TestGetDatabase():
         assert abs(os.path.getmtime(mock_geolite_dat) - t) < 1
 
     @pytest.mark.skipif(sys.version_info < (3, 4), reason="mock problem")
-    def test_force_refresh(self, mock_geo, mock_geolite_download, mock_geolite_dat):
-        httpretty.reset()
-        result = calibre_access.get_database()
-        assert httpretty.has_request() == False
-        assert result == mock_geo.return_value
-        with pytest.warns(UserWarning):
-            result = calibre_access.get_database(force_refresh=True)
+    def test_force_refresh(self, mock_geo, mock_geolite_dat, mock_geolite_download):
+        # httpretty.reset()
+        # assert httpretty.has_request() == False
+        result = calibre_access.get_database(force_refresh=True)
         assert result == mock_geo.return_value
         assert httpretty.has_request() == True
 
