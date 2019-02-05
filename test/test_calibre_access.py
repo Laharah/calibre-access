@@ -3,6 +3,7 @@ __author__ = 'laharah'
 
 import pytest
 import glob
+import math
 import mock
 import os
 import shutil
@@ -113,7 +114,7 @@ class TestGetDatabase():
         result = calibre_access.get_database()
         print(os.listdir(os.path.dirname(mock_geolite_dat)))
         assert result == mock_geo.return_value
-        assert os.path.getmtime(mock_geolite_dat) - t >= 2628000
+        assert os.path.getmtime(mock_geolite_dat) - math.floor(t) >= 2628000
 
     def test_old_dat_no_download(self, mock_geo, mock_geolite_dat, monkeypatch):
         def error_download():
