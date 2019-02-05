@@ -23,7 +23,6 @@ def test_download_database(mock_geolite_download):
         assert os.path.exists(calibre_access.USER_DIR)
         assert not glob.glob(
             os.path.join(calibre_access.USER_DIR, 'GeoLite2-City*.tar.gz'))
-        print([(f, os.stat(os.path.join(calibre_access.USER_DIR,f))) for f in os.listdir(calibre_access.USER_DIR)])
         with open(os.path.join(calibre_access.USER_DIR, 'GeoLite2-City.mmdb')) as fin:
             assert fin.read() == 'Mocked geolite data...'
 

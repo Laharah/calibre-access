@@ -125,11 +125,12 @@ def get_locations(records, ipdatabase):
                 loc = ipdatabase.city(ip)
                 cache[ip] = loc
             except AddressNotFoundError:
-               record['location'] = 'NONE, NONE'
-               yield record
-               continue
+                record['location'] = 'NONE, NONE'
+                yield record
+                continue
         try:
-            loc_string = ', '.join([loc.city.name, loc.subdivisions.most_specific.iso_code])
+            loc_string = ', '.join(
+                [loc.city.name, loc.subdivisions.most_specific.iso_code])
         except TypeError:  # one of the above returned None.
             loc_string = loc.country.name
         record['location'] = loc_string
