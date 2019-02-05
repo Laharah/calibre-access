@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 __author__ = 'laharah'
 
 import pytest
+import glob
 import mock
 import os
 import shutil
@@ -17,11 +18,12 @@ def test_download_database(mock_geolite_download):
     with temp_user_dir():
         shutil.rmtree(calibre_access.USER_DIR)
         assert calibre_access.download_database() == os.path.join(
-            calibre_access.USER_DIR, 'GeoLiteCity.dat')
+            calibre_access.USER_DIR, 'GeoLite2-City.mmdb')
         assert os.path.exists(calibre_access.USER_DIR)
-        assert not os.path.exists(
-            os.path.join(calibre_access.USER_DIR, 'GeoLiteCity.dat.gz'))
-        with open(os.path.join(calibre_access.USER_DIR, 'GeoLiteCity.dat')) as fin:
+        assert not glob.glob(
+            os.path.join(calibre_access.USER_DIR, 'GeoLite2-City*.tar.gz'))
+        print([(f, os.stat(os.path.join(calibre_access.USER_DIR,f))) for f in os.listdir(calibre_access.USER_DIR)])
+        with open(os.path.join(calibre_access.USER_DIR, 'GeoLite2-City.mmdb')) as fin:
             assert fin.read() == 'Mocked geolite data...'
 
 
@@ -94,7 +96,7 @@ class TestLocateLogslinux():
             p.chdir()
 
 
-@mock.patch('calibre_access.calibre_access.pygeoip.GeoIP', autospec=True)
+@mock.patch('calibre_access.calibre_access.geoip2.database.Reader', autospec=True)
 class TestGetDatabase():
     def test_missing_dat(self, mock_geo, mock_geolite_download):
         with temp_user_dir():
@@ -109,6 +111,7 @@ class TestGetDatabase():
         t -= 2628000
         os.utime(mock_geolite_dat, (t, t))
         result = calibre_access.get_database()
+        print(os.listdir(os.path.dirname(mock_geolite_dat)))
         assert result == mock_geo.return_value
         assert os.path.getmtime(mock_geolite_dat) - t >= 2628000
 
@@ -183,6 +186,7 @@ def test_download_coro_with_v3():
     assert result['book_id'] == '21468'
     assert result['type'] == 'download'
 
+
 def test_download_coro_v3_legacy():
     coro = calibre_access.download_coro()
     next(coro)
@@ -192,7 +196,6 @@ def test_download_coro_v3_legacy():
     assert result['file'] == None
     assert result['book_id'] == '21474'
     assert result['type'] == 'download'
-
 
 
 def test_read_coro():

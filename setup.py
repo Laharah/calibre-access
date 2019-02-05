@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='calibre-access',
-    version='1.3.4',
+    version='1.3.5',
     url='',
     license='MIT',
     author='laharah',
@@ -11,7 +11,7 @@ setup(
     packages=['calibre_access'],
     setup_requires=['pytest-runner'],
     install_requires=[
-        'pygeoip >= 0.3',
+        'geoip2 >= 2.9.0', 
         'appdirs >= 1.4.0',
         'docopt >= 0.5.0',
         'requests',

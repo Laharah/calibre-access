@@ -3,6 +3,9 @@ from __future__ import print_function, unicode_literals
 import re
 import gzip
 import datetime
+
+from geoip2.errors import AddressNotFoundError
+
 from .library import BookLibrary
 
 
@@ -118,14 +121,17 @@ def get_locations(records, ipdatabase):
         try:
             loc = cache[ip]
         except KeyError:
-            loc = ipdatabase.record_by_addr(ip)
-            cache[ip] = loc
-        if not loc:
-            loc = {'city': "NONE", 'region_code': "NONE"}
+            try:
+                loc = ipdatabase.city(ip)
+                cache[ip] = loc
+            except AddressNotFoundError:
+               record['location'] = 'NONE, NONE'
+               yield record
+               continue
         try:
-            loc_string = ', '.join([loc['city'], loc['region_code']])
-        except TypeError:
-            loc_string = loc['country_name']
+            loc_string = ', '.join([loc.city.name, loc.subdivisions.most_specific.iso_code])
+        except TypeError:  # one of the above returned None.
+            loc_string = loc.country.name
         record['location'] = loc_string
         yield record
 

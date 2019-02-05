@@ -4,6 +4,8 @@ import calibre_access.utilities as utilities
 import re
 import datetime
 import mock
+import geoip2.models
+from geoip2.errors import AddressNotFoundError
 import copy
 from fixtures import mock_access_logs_local, mock_db_file
 
@@ -104,30 +106,64 @@ def test_coro_from_gen():
 
 def test_get_locations():
     mock_ipdb = mock.MagicMock()
-    rec = {
-        'area_code': 828,
-        'city': 'Asheville',
-        'continent': 'NA',
-        'country_code': 'US',
-        'country_code3': 'USA',
-        'country_name': 'United States',
-        'dma_code': 567,
-        'latitude': 35.568299999999994,
-        'longitude': -82.6272,
-        'metro_code': 'Greenville-Spartenburg, SC',
-        'postal_code': '28806',
-        'region_code': 'NC',
-        'time_zone': 'America/New_York'
+
+    data = {
+        'city': {
+            'geoname_id': 5045360,
+            'names': {
+                'en': 'Saint Paul',
+            }
+        },
+        'continent': {
+            'code': 'NA',
+            'geoname_id': 6255149,
+            'names': {
+                'en': 'North America',
+            }
+        },
+        'country': {
+            'geoname_id': 6252001,
+            'iso_code': 'US',
+            'names': {
+                'en': 'United States',
+            }
+        },
+        'location': {
+            'accuracy_radius': 20,
+            'latitude': 44.9532,
+            'longitude': -93.158,
+            'metro_code': 613,
+            'time_zone': 'America/Chicago'
+        },
+        'postal': {
+            'code': '55104'
+        },
+        'registered_country': {
+            'geoname_id': 6252001,
+            'iso_code': 'US',
+            'names': {
+                'en': 'United States',
+            }
+        },
+        'subdivisions': [{
+            'geoname_id': 5037779,
+            'iso_code': 'MN',
+            'names': {
+                'es': 'Minnesota',
+            }
+        }],
+        'traits': {
+            'ip_address': '128.101.101.101'
+        }
     }
 
-    mock_ipdb.record_by_addr = mock.Mock(return_value=None)
+    sample_record = geoip2.models.City(data, ['en'])
+    mock_ipdb.city = mock.Mock(return_value=None, side_effect=AddressNotFoundError())
     ips = [{'host': str(i)} for i in range(3)]
     loc = utilities.get_locations(ips, mock_ipdb)
     assert next(loc)['location'] == 'NONE, NONE'
-    mock_ipdb.record_by_addr = mock.Mock(return_value=rec)
-    assert next(loc)['location'] == 'Asheville, NC'
-    rec['region_code'] = None
-    assert next(loc)['location'] == 'United States'
+    mock_ipdb.city = mock.Mock(return_value=sample_record)
+    assert next(loc)['location'] == 'Saint Paul, MN'
 
 
 def test_time_filter():
@@ -148,6 +184,7 @@ def test_time_filter():
     records = [record1, record2, record3, record4]
     assert len(list(utilities.time_filter(records, 10))) == 4
     assert len(list(utilities.time_filter(records, 25))) == 3
+
 
 def test_resolve_book_ids(mock_db_file):
     record = {
@@ -170,6 +207,7 @@ def test_resolve_book_ids(mock_db_file):
 
     resolve = utilities.resolve_book_ids([record], mock_db_file)
     assert next(resolve)['info'] == 'Book One - Author One'
+
 
 def test_resolve_id_w_no_id(mock_db_file):
     record = {

@@ -6,9 +6,9 @@ import shutil
 import sys
 import sqlite3
 import os
+import gzip
 import tempfile
 import httpretty
-import gzip
 import tarfile
 import contextlib
 import platform
@@ -105,7 +105,10 @@ def mock_geolite_download():
         mockfile.write(b'Mocked geolite data...')
         mockfile.seek(0)
         with tarfile.open(fileobj=sout, mode='w:gz') as f:
-            f.addfile(gettarinfo(fileobj=mockfile, arcname='GeoLite2-Cirt.mmdb'))
+            f.addfile(
+                f.gettarinfo(
+                    fileobj=mockfile,
+                    arcname='GeoLite2-City_20190205/GeoLite2-Cirt.mmdb'), mockfile)
 
     httpretty.register_uri(
         httpretty.GET,

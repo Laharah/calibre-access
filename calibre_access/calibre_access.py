@@ -24,7 +24,7 @@ __author__ = 'laharah'
 
 import json
 import re
-import gzip
+import tarfile
 import os
 import platform
 import glob
@@ -194,7 +194,7 @@ def download_database():
         "maxmind...",
         file=sys.stderr)
 
-    url = "http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz"
+    url = "https://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz"
 
     if not os.path.exists(USER_DIR):
         os.makedirs(USER_DIR)
@@ -217,13 +217,17 @@ def download_database():
             f.write(chunk)
 
     print("\nuncompressing...", file=sys.stderr)
-    with open(file_name[:-3], 'wb') as uncompressed:
-        with gzip.open(file_name, 'rb') as compressed:
-            uncompressed.write(compressed.read())
+    with tarfile.open(file_name, 'r:gz') as f:
+        names = f.getnames()
+        db_name = glob.fnmatch.filter(names, '*.mmdb')[0]
+        f.extract(db_name, path=USER_DIR)
+    db_path = os.path.join(USER_DIR, db_name)
     print("cleaning up...", file=sys.stderr)
+    os.rename(db_path, os.path.join(USER_DIR, 'GeoLite2-City.mmdb'))
+    os.rmdir(os.path.join(USER_DIR, os.path.split(db_name)[0]))
     os.remove(file_name)
     print("Done!", file=sys.stderr)
-    return file_name[:-3]
+    return os.path.join(USER_DIR, 'GeoLite2-City.mmdb')
 
 
 def get_search_dir():
@@ -256,7 +260,7 @@ def locate_logs():
 
 def get_database(force_refresh=False):
     """returns the pygeoip database, downloads if out of date or missing"""
-    database_path = os.path.join(USER_DIR, 'GeoLiteCity.dat')
+    database_path = os.path.join(USER_DIR, 'GeoLite2-City.mmdb')
     if not os.path.exists(database_path):
         try:
             database_path = download_database()
@@ -270,7 +274,7 @@ def get_database(force_refresh=False):
             warnings.warn("Could not download new database... "
                           "Using out of date geoip databse!")
 
-    ipdatabase = pygeoip.GeoIP(database_path)
+    ipdatabase = geoip2.database.Reader(database_path)
 
     return ipdatabase
 
