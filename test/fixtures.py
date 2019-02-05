@@ -9,6 +9,7 @@ import os
 import tempfile
 import httpretty
 import gzip
+import tarfile
 import contextlib
 import platform
 from io import BytesIO
@@ -43,7 +44,7 @@ def user_expansion(monkeypatch):
 @pytest.yield_fixture
 def mock_geolite_dat():
     with temp_user_dir() as temp_user:
-        path = os.path.join(temp_user, 'GeoLiteCity.dat')
+        path = os.path.join(temp_user, 'GeoLite2-City.mmdb')
         with open(path, 'w') as fout:
             fout.write('Fake Data...')
         yield path
@@ -100,13 +101,15 @@ def create_logs(base_path=None):
 def mock_geolite_download():
     httpretty.enable()
     sout = BytesIO()
-    with gzip.GzipFile(fileobj=sout, mode='wb') as f:
-        f.write(b'Mocked geolite data...')
+    with tempfile.TemporaryFile() as mockfile:
+        mockfile.write(b'Mocked geolite data...')
+        mockfile.seek(0)
+        with tarfile.open(fileobj=sout, mode='w:gz') as f:
+            f.addfile(gettarinfo(fileobj=mockfile, arcname='GeoLite2-Cirt.mmdb'))
 
     httpretty.register_uri(
         httpretty.GET,
-        "http://geolite.maxmind.com/download/geoip/database"
-        "/GeoLiteCity.dat.gz",
+        "https://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz",
         body=sout.getvalue(),
         status=200)
     yield

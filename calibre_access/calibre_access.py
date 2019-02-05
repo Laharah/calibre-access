@@ -23,7 +23,6 @@ Licensed under the MIT license (see LICENSE)
 __author__ = 'laharah'
 
 import json
-import pygeoip
 import re
 import gzip
 import os
@@ -34,6 +33,7 @@ import sys
 import warnings
 import urllib
 
+import geoip2.database
 import appdirs
 import requests
 from . import utilities
