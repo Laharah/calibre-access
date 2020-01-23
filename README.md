@@ -10,18 +10,29 @@ each IP.
 If the maxmind geolite database is not present or out of date, it will be
 downloaded.
 
-supports python 2.7, 3.3, 3.4, and 3.5; OS-X, Linux, Windows
+supports python 2.7, 3.3, 3.4, and 3.5+; OS-X, Linux, Windows
 
 ### Script Usage ###
+```
+Script that parses a calibre server log file.
 
-    calibre-access [options] [LOGFILE|-]
+Usage: calibre-access [options] [LOGFILE|-]
 
-        -d, --downloads   Parse download records (defaut record if none specified)
-        -s, --searches    Parse search records
-        -b, --bare        do not show total records or total unique ip's
-        --time-filter s   number of seconds to filter out non-unique records by.
-                          this filters rapid reloads/downloads. defaults to 10
+    -d, --downloads     Parse download records (defaut record if none specified)
+    -s, --searches      Parse search records
+    -r, --reads         Parse read book records
+    -v, --views         Parse view book detail records
+    -a, --all           equivalent to -dsrv
+    -b, --bare          do not show total records or total unique ip's
+    --set-library=PTH   use library to resolve book ids, saved between runs
 
+    --set-maxmind-license=LICENSE-KEY
+                        use and store LICENSE-KEY to access MaxMind database
+
+    --time-filter s     number of seconds to filter out non-unique records by.
+                        this filters rapid reloads/downloads. defaults to 10,
+    --force-refresh     Force a refresh of the GeoLite database
+```
 ### Library Usage ###
 
 ```python
