@@ -59,6 +59,12 @@ def print_record(record):
 
     date = record['datetime'].strftime('%d/%b/%Y:%H:%M:%S')
 
+    # Handle skipped location
+    try:
+        record['location']
+    except KeyError:
+        line = line.replace('\t{r[location]:25}', '')
+
     print(line.format(os, date, r=record))
 
 
@@ -330,15 +336,16 @@ def main():
         ipdatabase = get_database(arguments['--force-refresh'])
     except requests.ConnectionError:
         print(
-            "Could not connect to Maxmind to download new database, Exiting!",
+            "Could not connect to Maxmind to download GeoIP database. Skipping.",
             file=sys.stderr)
-        sys.exit(1)
+        ipdatabase = None
     time_filter_len = arguments['--time-filter']
     time_filter_len = 10 if time_filter_len is None else int(time_filter_len)
 
     base_records = utilities.get_records(log_file, coros)
-    geo_located = utilities.get_locations(base_records, ipdatabase)
-    records = utilities.get_os_from_agents(geo_located)
+    if ipdatabase is not None:
+        base_records = utilities.get_locations(base_records, ipdatabase)
+    records = utilities.get_os_from_agents(base_records)
 
     if arguments['--set-library'] is None and config['library_path']:
         arguments['--set-library'] = config['library_path']
