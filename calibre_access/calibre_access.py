@@ -371,7 +371,7 @@ def main():
 
     try:
         ipdatabase = get_database(arguments['--force-refresh'], config['maxmind_license'])
-    except requests.ConnectionError:
+    except requests.ConnectionError as e:
         print("Could not connect to Maxmind to download GeoIP database. Skipping.",
               file=sys.stderr)
         print(str(e), file=sys.stderr)
