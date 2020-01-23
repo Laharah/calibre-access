@@ -4,16 +4,20 @@ Script that parses a calibre server log file.
 
 Usage: calibre-access [options] [LOGFILE|-]
 
-    -d, --downloads   Parse download records (defaut record if none specified)
-    -s, --searches    Parse search records
-    -r, --reads       Parse read book records
-    -v, --views       Parse view book detail records
-    -a, --all         equivalent to -dsrv
-    -b, --bare        do not show total records or total unique ip's
-    --set-library=PTH use library to resolve book ids, saved between runs
-    --time-filter s   number of seconds to filter out non-unique records by.
-                      this filters rapid reloads/downloads. defaults to 10,
-    --force-refresh   Force a refresh of the GeoLite database
+    -d, --downloads     Parse download records (defaut record if none specified)
+    -s, --searches      Parse search records
+    -r, --reads         Parse read book records
+    -v, --views         Parse view book detail records
+    -a, --all           equivalent to -dsrv
+    -b, --bare          do not show total records or total unique ip's
+    --set-library=PTH   use library to resolve book ids, saved between runs
+
+    --set-maxmind-license=LICENSE-KEY
+                        use and store LICENSE-KEY to access MaxMind database
+
+    --time-filter s     number of seconds to filter out non-unique records by.
+                        this filters rapid reloads/downloads. defaults to 10,
+    --force-refresh     Force a refresh of the GeoLite database
 
 
 
@@ -193,20 +197,38 @@ def view_coro():
 #  Section: db_management
 #########
 
+class MaxmindLicenseError(Exception):
+    pass
 
-def download_database():
-    print(
-        "database missing or out of date, attempting to download from "
-        "maxmind...",
-        file=sys.stderr)
+def download_database(license=None):
+    if license is None:
+        msg = ("Maxmind now requires a license-key to be GDPR compliant.\n\n"
+                "Sign up for a free account here:\n"
+                "https://www.maxmind.com/en/geolite2/signup\n"
+                "And then create a free license key here:\n"
+                "https://www.maxmind.com/en/accounts/current/license-key\n\n"
+                "You can then re-run calibre-access with "
+                "`--set-maxmind-license=LICENSE-KEY` to save your "
+                "license key and keep the database updated.\n")
 
-    url = "https://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz"
+        print(msg, file=sys.stderr)
+        raise MaxmindLicenseError
+    print("database missing or out of date, attempting to download from "
+          "maxmind...",
+          file=sys.stderr)
 
+    url = 'https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key={0}&suffix=tar.gz'
+
+    url = url.format(license)
     if not os.path.exists(USER_DIR):
         os.makedirs(USER_DIR)
 
-    file_name = os.path.join(USER_DIR, url.split('/')[-1])
+    file_name = os.path.join(USER_DIR, 'GeoLite2-City.tar.gz')
     r = requests.get(url, stream=True)
+    if r.status_code == 401:
+        raise MaxmindLicenseError('MaxMind returned status 401:Unauthorized, please update key')
+    if r.status_code != 200:
+        raise requests.ConnectionError('\t'.join((r.status_code, r.reason)))
     file_size = int(r.headers['Content-Length'])
     print("Downloading: %s Bytes: %s" % (file_name, file_size), file=sys.stderr)
 
@@ -254,8 +276,8 @@ def locate_logs():
     path = get_search_dir()
 
     if os.path.exists(path):
-        return sorted(
-            glob.glob(os.path.join(path, 'server_access_log.txt*')), reverse=True)
+        return sorted(glob.glob(os.path.join(path, 'server_access_log.txt*')),
+                      reverse=True)
 
     local = glob.glob('server_access_log.txt*')
     if not local:
@@ -264,21 +286,23 @@ def locate_logs():
         return sorted(local, reverse=True)
 
 
-def get_database(force_refresh=False):
+def get_database(force_refresh=False, maxmind_license=None):
     """returns the pygeoip database, downloads if out of date or missing"""
     database_path = os.path.join(USER_DIR, 'GeoLite2-City.mmdb')
     if not os.path.exists(database_path):
         try:
-            database_path = download_database()
+            database_path = download_database(maxmind_license)
         except requests.ConnectionError:
             raise
 
     if (time.time() - os.path.getmtime(database_path) > 2628000 or force_refresh):
         try:
-            database_path = download_database()
-        except requests.ConnectionError:
+            database_path = download_database(maxmind_license)
+        except requests.ConnectionError as e:
+            warnings.warn(str(e))
             warnings.warn("Could not download new database... "
                           "Using out of date geoip databse!")
+
 
     ipdatabase = geoip2.database.Reader(database_path)
 
@@ -291,11 +315,24 @@ def main():
     arguments = docopt.docopt(__doc__)
 
     config_file = os.path.join(USER_CONFIG_DIR, 'config.json')
+
+    # default config
+    config = {'library_path': None, 'maxmind_license':None}
     if os.path.exists(config_file):
         with open(config_file, 'r') as fin:
-            config = json.load(fin)
-    else:
-        config = {'library_path': None}
+            config.update(json.load(fin))
+
+    if arguments['--set-library'] or arguments['--set-maxmind-license']:
+        lp, ml = arguments['--set-library'], arguments['--set-maxmind-license']
+        if lp:
+            config['library_path'] = lp
+        if ml:
+            config['maxmind_license'] = ml
+        if not os.path.exists(USER_CONFIG_DIR):
+            os.makedirs(USER_CONFIG_DIR)
+        with open(config_file, 'w') as fout:
+            json.dump(config, fout)
+
 
     log_file = arguments["LOGFILE"]
     if not log_file:
@@ -333,11 +370,15 @@ def main():
         log_file = utilities.get_lines_from_logs(log_file)
 
     try:
-        ipdatabase = get_database(arguments['--force-refresh'])
+        ipdatabase = get_database(arguments['--force-refresh'], config['maxmind_license'])
     except requests.ConnectionError:
-        print(
-            "Could not connect to Maxmind to download GeoIP database. Skipping.",
-            file=sys.stderr)
+        print("Could not connect to Maxmind to download GeoIP database. Skipping.",
+              file=sys.stderr)
+        print(str(e), file=sys.stderr)
+        ipdatabase = None
+    except MaxmindLicenseError as e:
+        if e.args:
+            print(e.args[0])
         ipdatabase = None
     time_filter_len = arguments['--time-filter']
     time_filter_len = 10 if time_filter_len is None else int(time_filter_len)
@@ -369,12 +410,5 @@ def main():
     if not arguments['--bare']:
         print("Total Records: {}".format(total_records))
         print("Unique Ips: {}".format(len(ips)))
-
-    if arguments['--set-library']:
-        config['library_path'] = arguments['--set-library']
-        if not os.path.exists(USER_CONFIG_DIR):
-            os.makedirs(USER_CONFIG_DIR)
-        with open(config_file, 'w') as fout:
-            json.dump(config, fout)
 
     sys.exit(0)

@@ -106,13 +106,13 @@ def mock_geolite_download():
         mockfile.seek(0)
         with tarfile.open(fileobj=sout, mode='w:gz') as f:
             f.addfile(
-                f.gettarinfo(
-                    fileobj=mockfile,
-                    arcname='GeoLite2-City_20190205/GeoLite2-Cirt.mmdb'), mockfile)
+                f.gettarinfo(fileobj=mockfile,
+                             arcname='GeoLite2-City_20190205/GeoLite2-Cirt.mmdb'),
+                mockfile)
 
     httpretty.register_uri(
         httpretty.GET,
-        "https://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz",
+        'https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=1234&suffix=tar.gz',
         body=sout.getvalue(),
         status=200)
     yield

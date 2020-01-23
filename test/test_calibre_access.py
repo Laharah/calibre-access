@@ -18,7 +18,7 @@ import calibre_access.utilities as utilities
 def test_download_database(mock_geolite_download):
     with temp_user_dir():
         shutil.rmtree(calibre_access.USER_DIR)
-        assert calibre_access.download_database() == os.path.join(
+        assert calibre_access.download_database(1234) == os.path.join(
             calibre_access.USER_DIR, 'GeoLite2-City.mmdb')
         assert os.path.exists(calibre_access.USER_DIR)
         assert not glob.glob(
@@ -100,23 +100,23 @@ class TestLocateLogslinux():
 class TestGetDatabase():
     def test_missing_dat(self, mock_geo, mock_geolite_download):
         with temp_user_dir():
-            result = calibre_access.get_database()
+            result = calibre_access.get_database(maxmind_license=1234)
             assert result == mock_geo.return_value
 
     def test_current_dat(self, mock_geo, mock_geolite_dat):
-        assert calibre_access.get_database() == mock_geo.return_value
+        assert calibre_access.get_database(maxmind_license=1234) == mock_geo.return_value
 
     def test_dat_too_old(self, mock_geo, mock_geolite_dat, mock_geolite_download):
         t = os.path.getmtime(mock_geolite_dat)
         t -= 2628000
         os.utime(mock_geolite_dat, (t, t))
-        result = calibre_access.get_database()
+        result = calibre_access.get_database(maxmind_license=1234)
         print(os.listdir(os.path.dirname(mock_geolite_dat)))
         assert result == mock_geo.return_value
         assert os.path.getmtime(mock_geolite_dat) - math.floor(t) >= 2628000
 
     def test_old_dat_no_download(self, mock_geo, mock_geolite_dat, monkeypatch):
-        def error_download():
+        def error_download(license):
             raise calibre_access.requests.ConnectionError('no internet')
 
         monkeypatch.setattr('calibre_access.calibre_access.download_database',
@@ -125,7 +125,7 @@ class TestGetDatabase():
         t -= 2628000
         os.utime(mock_geolite_dat, (t, t))
         with pytest.warns(UserWarning):
-            result = calibre_access.get_database()
+            result = calibre_access.get_database(maxmind_license=1234)
         assert result == mock_geo.return_value
         assert abs(os.path.getmtime(mock_geolite_dat) - t) < 1
 
@@ -133,7 +133,7 @@ class TestGetDatabase():
     def test_force_refresh(self, mock_geo, mock_geolite_dat, mock_geolite_download):
         # httpretty.reset()
         # assert httpretty.has_request() == False
-        result = calibre_access.get_database(force_refresh=True)
+        result = calibre_access.get_database(maxmind_license=1234, force_refresh=True)
         assert result == mock_geo.return_value
         assert httpretty.has_request() == True
 
