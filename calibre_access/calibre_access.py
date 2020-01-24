@@ -197,19 +197,21 @@ def view_coro():
 #  Section: db_management
 #########
 
+
 class MaxmindLicenseError(Exception):
     pass
+
 
 def download_database(license=None):
     if license is None:
         msg = ("Maxmind now requires a license-key to be GDPR compliant.\n\n"
-                "Sign up for a free account here:\n"
-                "https://www.maxmind.com/en/geolite2/signup\n"
-                "And then create a free license key here:\n"
-                "https://www.maxmind.com/en/accounts/current/license-key\n\n"
-                "You can then re-run calibre-access with "
-                "`--set-maxmind-license=LICENSE-KEY` to save your "
-                "license key and keep the database updated.\n")
+               "Sign up for a free account here:\n"
+               "https://www.maxmind.com/en/geolite2/signup\n"
+               "And then create a free license key here:\n"
+               "https://www.maxmind.com/en/accounts/current/license-key\n\n"
+               "You can then re-run calibre-access with "
+               "`--set-maxmind-license=LICENSE-KEY` to save your "
+               "license key and keep the database updated.\n")
 
         print(msg, file=sys.stderr)
         raise MaxmindLicenseError
@@ -226,7 +228,8 @@ def download_database(license=None):
     file_name = os.path.join(USER_DIR, 'GeoLite2-City.tar.gz')
     r = requests.get(url, stream=True)
     if r.status_code == 401:
-        raise MaxmindLicenseError('MaxMind returned status 401:Unauthorized, please update key')
+        raise MaxmindLicenseError(
+            'MaxMind returned status 401:Unauthorized, please update key')
     if r.status_code != 200:
         raise requests.ConnectionError('\t'.join((r.status_code, r.reason)))
     file_size = int(r.headers['Content-Length'])
@@ -303,7 +306,6 @@ def get_database(force_refresh=False, maxmind_license=None):
             warnings.warn("Could not download new database... "
                           "Using out of date geoip databse!")
 
-
     ipdatabase = geoip2.database.Reader(database_path)
 
     return ipdatabase
@@ -317,7 +319,7 @@ def main():
     config_file = os.path.join(USER_CONFIG_DIR, 'config.json')
 
     # default config
-    config = {'library_path': None, 'maxmind_license':None}
+    config = {'library_path': None, 'maxmind_license': None}
     if os.path.exists(config_file):
         with open(config_file, 'r') as fin:
             config.update(json.load(fin))
@@ -332,7 +334,6 @@ def main():
             os.makedirs(USER_CONFIG_DIR)
         with open(config_file, 'w') as fout:
             json.dump(config, fout)
-
 
     log_file = arguments["LOGFILE"]
     if not log_file:

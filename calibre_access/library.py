@@ -4,7 +4,6 @@ import re
 
 class BookLibrary(object):
     """a context wrapper for calibre-db lookups"""
-
     def __init__(self, db_file):
         self.db_file = db_file
         self.con = None

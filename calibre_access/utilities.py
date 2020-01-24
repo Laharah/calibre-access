@@ -97,7 +97,6 @@ def get_os_from_agents(records):
 
 def coro_from_gen(generator):
     """turn a normal generator into a coroutine"""
-
     def input_pipe():
         """small internal coroutine that recieves data"""
         x = ''
