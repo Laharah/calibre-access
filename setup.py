@@ -19,7 +19,7 @@ setup(
     tests_require=[
         'pytest >= 2.8.7',
         'mock >= 1.3.0',
-        'httpretty >= 0.8.14',
+        "httpretty >= 1.0.2",
     ],
     entry_points={
         'console_scripts': [
