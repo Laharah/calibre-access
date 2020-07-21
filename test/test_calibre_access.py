@@ -8,7 +8,7 @@ import mock
 import os
 import shutil
 
-from fixtures import *
+from .fixtures import *
 import httpretty
 
 import calibre_access.calibre_access as calibre_access

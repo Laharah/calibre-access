@@ -16,7 +16,7 @@ from io import BytesIO
 
 import pytest
 
-from mock_sql import SQL
+from .mock_sql import SQL
 import calibre_access.calibre_access as calibre_access
 
 

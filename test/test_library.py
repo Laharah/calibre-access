@@ -6,7 +6,7 @@ import hashlib
 import sys
 import sqlite3
 
-from fixtures import mock_db_file
+from .fixtures import mock_db_file
 import calibre_access.library as lb
 
 

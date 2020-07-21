@@ -7,7 +7,7 @@ import mock
 import geoip2.models
 from geoip2.errors import AddressNotFoundError
 import copy
-from fixtures import mock_access_logs_local, mock_db_file
+from .fixtures import mock_access_logs_local, mock_db_file
 
 
 def test_get_lines_from_logs(mock_access_logs_local):
