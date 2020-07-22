@@ -313,6 +313,10 @@ def get_database(force_refresh=False, maxmind_license=None):
 
 def main():
     import docopt
+    import signal
+
+    # ignore sigpipe
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
     arguments = docopt.docopt(__doc__)
 
