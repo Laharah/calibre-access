@@ -73,7 +73,7 @@ def parse_generic_server_log_line(lines):
             d['referer'], d['user_agent'] = None, None
         del d['ref/uagent']
         field_map = {
-            'status': lambda x: int(x),
+            'status': lambda x: int(x) if x.isdecimal() else x,
             'bytes': lambda s: int(s) if s != '-' else 0,
             'datetime': lambda s: datetime.datetime.strptime(s, '%d/%b/%Y:%H:%M:%S'),
         }

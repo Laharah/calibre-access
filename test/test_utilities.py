@@ -92,6 +92,25 @@ def test_parse_v3_log_line():
     }  # yapf: disable
     assert next(result) == parsed
 
+def test_parse_v3_log_line_string_status():
+    line = r'192.168.0.1 port-41176 - 15/Nov/2020:10:02:46 -0800 "GET /get/cover/17524/Calibre_Library HTTP/1.1" HTTPStatus.NOT_MODIFIED 135'
+    result = utilities.parse_generic_server_log_line([line])
+    parsed = {
+        'host':       '192.168.0.1',
+        'identity':   'port-41176',
+        'user':       '-',
+        'datetime':   datetime.datetime(2020, 11, 15, 10, 2, 46),
+        'timezone':   '-0800 ',
+        'method':     'GET',
+        'request':    '/get/cover/17524/Calibre_Library',
+        'protocol':   'HTTP/1.1',
+        'status':     'HTTPStatus.NOT_MODIFIED',
+        'bytes':      135,
+        'referer':    None,
+        'user_agent': None,
+    }  # yapf: disable
+    assert next(result) == parsed
+
 
 def test_coro_from_gen():
     def square(nums):
