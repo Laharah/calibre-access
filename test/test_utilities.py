@@ -177,7 +177,7 @@ def test_get_locations():
     }
 
     sample_record = geoip2.models.City(data, ['en'])
-    mock_ipdb.city = mock.Mock(return_value=None, side_effect=AddressNotFoundError())
+    mock_ipdb.city = mock.Mock(return_value=None, side_effect=AddressNotFoundError("Failure message"))
     ips = [{'host': str(i)} for i in range(3)]
     loc = utilities.get_locations(ips, mock_ipdb)
     assert next(loc)['location'] == 'NONE, NONE'
